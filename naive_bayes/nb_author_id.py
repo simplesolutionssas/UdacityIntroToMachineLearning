@@ -24,14 +24,14 @@ features_train, features_test, labels_train, labels_test = preprocess()
 # create, train and use the classifier to make predictions on
 classifier = GaussianNB()
 # fit the model and time it
-t0 = time()
+start_time = time()
 classifier.fit(features_train, labels_train)
-print "training time:", round(time()-t0, 3), "s"
+print "training time:", round(time()-start_time, 3), "s"
 
 # make predictions for the test data, and time it
-t0 = time()
+start_time = time()
 predictions = classifier.predict(features_test)
-print "testing time:", round(time()-t0, 3), "s"
+print "testing time:", round(time()-start_time, 3), "s"
 
 # calculate and print the accuracy of the model
 accuracy = classifier.score(features_test, labels_test)
