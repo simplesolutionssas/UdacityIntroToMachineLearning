@@ -1,11 +1,5 @@
 #!/usr/bin/python
 
-import sys
-from time import time
-from sklearn.naive_bayes import GaussianNB
-sys.path.append("../tools/")
-from email_preprocess import preprocess
-
 """
     This is the code to accompany the Lesson 1 (Naive Bayes) mini-project.
 
@@ -15,6 +9,12 @@ from email_preprocess import preprocess
     Sara has label 0
     Chris has label 1
 """
+
+import sys
+from time import time
+from sklearn.naive_bayes import GaussianNB
+sys.path.append("../tools/")
+from email_preprocess import preprocess
 
 # features_train and features_test are the features for the training
 # and testing datasets, respectively
