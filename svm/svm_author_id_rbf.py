@@ -39,7 +39,7 @@ def train_svm(features, labels, c):
 
     # calculate and print the accuracy of the model
     accuracy = classifier.score(features_test, labels_test)
-    print('Model accuracy: {}, C: {}, set size: {}'.format(accuracy,
+    print('model accuracy: {}, C: {}, set size: {}'.format(accuracy,
           c, len(features)))
 
     return predictions
@@ -57,8 +57,8 @@ predictions = train_svm(features_train, labels_train, 10000)
 test_points = [10, 26, 50]
 for point in test_points:
     prediction = predictions[point]
-    print('Predicted value for point {} is: {}'.format(point, prediction))
+    print('\npredicted value for point {} is: {}'.format(point, prediction))
 
 # calculate how many test emails are predicted to be from Chris
 chris_email_count = sum(predictions)
-print('Emails predicted to be from Chris: {}'.format(chris_email_count))
+print('\nemails predicted to be from Chris: {}'.format(chris_email_count))
