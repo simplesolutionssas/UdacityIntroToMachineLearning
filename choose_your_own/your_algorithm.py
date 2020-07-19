@@ -1,44 +1,144 @@
 #!/usr/bin/python
 
 import matplotlib.pyplot as plt
+import importlib
+from time import time
 from prep_terrain_data import makeTerrainData
 from class_vis import prettyPicture
 
 features_train, labels_train, features_test, labels_test = makeTerrainData()
 
 
-### the training data (features_train, labels_train) have both "fast" and "slow"
-### points mixed together--separate them so we can give them different colors
-### in the scatterplot and identify them visually
-grade_fast = [features_train[ii][0] for ii in range(0, len(features_train)) if labels_train[ii]==0]
-bumpy_fast = [features_train[ii][1] for ii in range(0, len(features_train)) if labels_train[ii]==0]
-grade_slow = [features_train[ii][0] for ii in range(0, len(features_train)) if labels_train[ii]==1]
-bumpy_slow = [features_train[ii][1] for ii in range(0, len(features_train)) if labels_train[ii]==1]
+def get_points(feature, label_value):
+    '''
+    Retrieve the points in the features_train dataset that have a specific
+    label value for a specific feature.
+
+    Args:
+        feature : int
+            The column number where the feature data is.
+        label_value : int
+            The specific label we need to get the points for.
+
+    Returns:
+        points : list
+            The list of points for the feature that have the desired label.
+    '''
+    points = [features_train[ii][feature] for ii in range(0,
+              len(features_train)) if labels_train[ii] == label_value]
+
+    return points
 
 
-#### initial visualization
-plt.xlim(0.0, 1.0)
-plt.ylim(0.0, 1.0)
-plt.scatter(bumpy_fast, grade_fast, color = "b", label="fast")
-plt.scatter(grade_slow, bumpy_slow, color = "r", label="slow")
-plt.legend()
-plt.xlabel("bumpiness")
-plt.ylabel("grade")
-plt.show()
-################################################################################
+def visualize_dataset():
+    '''
+    The training data (features_train, labels_train) has both "fast" and "slow"
+    points mixed together, so we separate them by giving them different colors,
+    and then produce a scatterplot to visualize them.
+    '''
+    grade_fast = get_points(0, 0)
+    bumpy_fast = get_points(1, 0)
+    grade_slow = get_points(0, 1)
+    bumpy_slow = get_points(1, 1)
+
+    # initial visualization
+    print('dataset visualization')
+    plt.xlim(0.0, 1.0)
+    plt.ylim(0.0, 1.0)
+    plt.scatter(bumpy_fast, grade_fast, color="b", label="fast")
+    plt.scatter(grade_slow, bumpy_slow, color="r", label="slow")
+    plt.legend()
+    plt.xlabel("bumpiness")
+    plt.ylabel("grade")
+    plt.show()
 
 
-### your code here!  name your classifier object clf if you want the 
-### visualization code (prettyPicture) to show you the decision boundary
+def get_classifier(full_class_path, **kwargs):
+    '''
+    Dynamically get an instance of the desired classifier, with the desired
+    arguments.
+
+    Args:
+        full_class_path : string
+            The full path of the class we want to use to classify the data.
+            It needs to follow this form: package.subpackage.class.
+
+    Keyword Args:
+        These are the specific parameters that we want to use to train the
+        classifier. They must be passed as a dictionary with the proper name
+        (as required by the classifier class) and the appropriate values. Since
+        they vary from class to class, and are so many, it's not reassonable to
+        document them here.
+
+    Returns:
+        instance : object
+            This is the desired classifier, from the class specified by
+            full_class_path, instantiated with all the required kwargs.
+    '''
+    module_name, class_name = full_class_path.rsplit(".", 1)
+    class_module = importlib.import_module(module_name)
+    classifier_class = getattr(class_module, class_name)
+    classifier = classifier_class(**kwargs)
+    return classifier
 
 
+def train(classifier):
+    '''
+    Get the accuracy of the algorithm, trained with the specific parameters
+    defined by the kwargs.
+
+    Args:
+        classifier : object
+            This is an instance of the class we want to use to classify the
+            data, fully initialized with all the desired arguments.
+
+    Returns:
+        accuracy : float
+            It's the accuracy obtained after classifying the dataset with the
+            given classifier.
+        training_time : float
+            It's the time it took to train the classifier.
+    '''
+    # fit the model and time it
+    start_time = time()
+    classifier.fit(features_train, labels_train)
+    training_time = round(time()-start_time, 3)
+    accuracy = classifier.score(features_test, labels_test)
+    return accuracy, training_time
 
 
+def visualize_decision_boundary(classifier):
+    '''
+    Visualize the decision boundary on the test data for the given classifier.
+
+    Args:
+        classifier : object
+            This is the instance of the class we used to classify the data, for
+            which we'll plot the decision boundary.
+    '''
+    try:
+        prettyPicture(classifier, features_test, labels_test)
+    except NameError:
+        pass
 
 
+def display_results(classifier, accuracy, kwargs, training_time):
+    '''
+
+    '''
+    print('\nclass: {}'.format(type(classifier).__name__))
+    print('\accuracy: {}'.format(accuracy))
+    print('kwargs: {}'.format(kwargs))
+    print('training time: {} s'.format(training_time))
+    visualize_decision_boundary(classifier)
 
 
-try:
-    prettyPicture(clf, features_test, labels_test)
-except NameError:
-    pass
+max_accuracy = 0
+visualize_dataset()
+classifier_class = 'sklearn.tree.DecisionTreeClassifier'
+kwargs = {'criterion': 'entropy', 'min_samples_split': 20}
+classifier = get_classifier(classifier_class, **kwargs)
+accuracy, training_time = train(classifier)
+if accuracy > max_accuracy:
+    max_accuracy = accuracy
+    display_results(classifier, accuracy, kwargs, training_time)
