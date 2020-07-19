@@ -133,12 +133,68 @@ def display_results(classifier, accuracy, kwargs, training_time):
     visualize_decision_boundary(classifier)
 
 
+def unpack_parameters(parameters_list):
+    '''
+    '''
+    unpacked_parameters = []
+    for parameter_name, parameter_values in parameters_list.items():
+        unpacked_parameters_count = len(unpacked_parameters)
+        if unpacked_parameters_count == 0:
+            for parameter_value in parameter_values:
+                unpacked_parameters.append({parameter_name: parameter_value})
+        else:
+            new_unpacked_parameters = []
+            for parameter_value in parameter_values:
+                for index in range(unpacked_parameters_count):
+                    current_parameters = unpacked_parameters[index].items()
+                    new_parameter = {parameter_name: parameter_value}.items()
+                    all_parameters = dict(current_parameters + new_parameter)
+                    new_unpacked_parameters.append(all_parameters)
+            unpacked_parameters = new_unpacked_parameters
+
+    return unpacked_parameters
+
+
+def create_classifiers(experiment_definitions):
+    '''
+    '''
+    classifiers = {}
+    for classifier_class, parameters_list in experiment_definitions.items():
+        classifiers[classifier_class] = unpack_parameters(parameters_list)
+    return classifiers
+
+
+# define the parameters for all experiments we want to run, in a compact way
+experiment_definitions = {
+    'sklearn.tree.DecisionTreeClassifier':
+        {'criterion': ['entropy', 'gini'],
+         'min_samples_split': [2, 4, 8, 16, 32, 64]}
+}
+classifiers = create_classifiers(experiment_definitions)
+print(classifiers)
+
+# create, fit and evaluate each classifier, selecting the best
 max_accuracy = 0
 visualize_dataset()
-classifier_class = 'sklearn.tree.DecisionTreeClassifier'
-kwargs = {'criterion': 'entropy', 'min_samples_split': 20}
-classifier = get_classifier(classifier_class, **kwargs)
-accuracy, training_time = train(classifier)
-if accuracy > max_accuracy:
-    max_accuracy = accuracy
-    display_results(classifier, accuracy, kwargs, training_time)
+for classifier_class, kwargs_list in classifiers.items():
+    for kwargs in kwargs_list:
+        classifier = get_classifier(classifier_class, **kwargs)
+        accuracy, training_time = train(classifier)
+        if accuracy > max_accuracy:
+            max_accuracy = accuracy
+            display_results(classifier, accuracy, kwargs, training_time)
+
+print('selection finished')
+
+# max_accuracy = 0
+# visualize_dataset()
+# classifier_class = 'sklearn.tree.DecisionTreeClassifier'
+# kwargs = {'criterion': 'entropy', 'min_samples_split': 20}
+# classifier = get_classifier(classifier_class, **kwargs)
+# accuracy, training_time = train(classifier)
+# if accuracy > max_accuracy:
+#     max_accuracy = accuracy
+#     display_results(classifier, accuracy, kwargs, training_time)
+
+
+
