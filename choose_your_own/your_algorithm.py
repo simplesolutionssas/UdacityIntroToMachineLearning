@@ -150,21 +150,16 @@ def display_results(classifier, accuracy, parameters, training_time):
 def unpack_parameters(parameters_list):
     '''
     '''
-    unpacked_parameters = []
+    parameters = []
     for parameter_name, parameter_values in parameters_list.items():
-        unpacked_parameters_count = len(unpacked_parameters)
-        if unpacked_parameters_count == 0:
-            for parameter_value in parameter_values:
-                unpacked_parameters.append({parameter_name: parameter_value})
+        if len(parameters) == 0:
+            parameters = [{parameter_name: parameter_value}
+                          for parameter_value in parameter_values]
         else:
-            new_unpacked_parameters = []
-            for parameter_value in parameter_values:
-                for index in range(unpacked_parameters_count):
-                    current_parameters = unpacked_parameters[index].items()
-                    new_parameter = {parameter_name: parameter_value}.items()
-                    all_parameters = dict(current_parameters + new_parameter)
-                    new_unpacked_parameters.append(all_parameters)
-            unpacked_parameters = new_unpacked_parameters
+            parameters = [dict(parameter.items() +
+                               {parameter_name: parameter_value}.items())
+                          for parameter_value in parameter_values
+                          for parameter in parameters]
 
     return parameters
 
