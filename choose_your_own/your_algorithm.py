@@ -67,7 +67,7 @@ def get_classifier(full_class_path, **kwargs):
         These are the specific parameters that we want to use to train the
         classifier. They must be passed as a dictionary with the proper name
         (as required by the classifier class) and the appropriate values. Since
-        they vary from class to class, and are so many, it's not reassonable to
+        they vary from class to class, and are so many, it's not reasonable to
         document them here.
 
     Returns:
@@ -122,9 +122,23 @@ def visualize_decision_boundary(classifier):
         pass
 
 
-def display_results(classifier, accuracy, kwargs, training_time):
+def display_results(classifier, accuracy, parameters, training_time):
     '''
+    Auxiliary method to display all the relevant information for a particular
+    result.
 
+    Args:
+        classifier : object
+            This is the instance of the class we used to classify the data, for
+            which we'll display the results.
+        accuracy : float
+            It's the accuracy obtained after classifying the dataset with the
+            given classifier.
+        kwargs : dictionary
+            This is a dictionary with the particular parameters used to create
+            and fit the classifier that obtained these results.
+        training_time : float
+            It's the time it took to train the classifier.
     '''
     print('\nclass: {}'.format(type(classifier).__name__))
     print('\accuracy: {}'.format(accuracy))
@@ -152,7 +166,7 @@ def unpack_parameters(parameters_list):
                     new_unpacked_parameters.append(all_parameters)
             unpacked_parameters = new_unpacked_parameters
 
-    return unpacked_parameters
+    return parameters
 
 
 def create_classifiers(experiment_definitions):
@@ -185,16 +199,3 @@ for classifier_class, kwargs_list in classifiers.items():
             display_results(classifier, accuracy, kwargs, training_time)
 
 print('selection finished')
-
-# max_accuracy = 0
-# visualize_dataset()
-# classifier_class = 'sklearn.tree.DecisionTreeClassifier'
-# kwargs = {'criterion': 'entropy', 'min_samples_split': 20}
-# classifier = get_classifier(classifier_class, **kwargs)
-# accuracy, training_time = train(classifier)
-# if accuracy > max_accuracy:
-#     max_accuracy = accuracy
-#     display_results(classifier, accuracy, kwargs, training_time)
-
-
-
