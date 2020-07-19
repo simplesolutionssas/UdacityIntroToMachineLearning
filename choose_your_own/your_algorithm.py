@@ -134,15 +134,15 @@ def display_results(classifier, accuracy, parameters, training_time):
         accuracy : float
             It's the accuracy obtained after classifying the dataset with the
             given classifier.
-        kwargs : dictionary
+        parameters : dictionary
             This is a dictionary with the particular parameters used to create
             and fit the classifier that obtained these results.
         training_time : float
             It's the time it took to train the classifier.
     '''
     print('\nclass: {}'.format(type(classifier).__name__))
-    print('\accuracy: {}'.format(accuracy))
-    print('kwargs: {}'.format(kwargs))
+    print('accuracy: {}'.format(accuracy))
+    print('parameters: {}'.format(parameters))
     print('training time: {} s'.format(training_time))
     visualize_decision_boundary(classifier)
 
@@ -180,7 +180,7 @@ experiment_definitions = {
          'min_samples_split': [2, 4, 8, 16, 32, 64]}
 }
 classifiers = create_classifiers(experiment_definitions)
-print(classifiers)
+print('classifiers: \n{}'.format(classifiers))
 
 # create, fit and evaluate each classifier, selecting the best
 max_accuracy = 0
