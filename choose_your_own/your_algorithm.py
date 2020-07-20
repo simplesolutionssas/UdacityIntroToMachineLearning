@@ -201,7 +201,7 @@ def create_classifiers(experiment_definitions):
 def run_experiments(classifiers):
     '''
     Uses the different classifier definitions stored in classifiers, to execute
-    all the experiments and collect their results. 
+    all the experiments and collect their results.
 
     Args:
         classifiers : list
@@ -219,10 +219,10 @@ def run_experiments(classifiers):
             classifier = get_classifier(classifier_class, **kwargs)
             accuracy, training_time = train(classifier)
             save_results(results, classifier, accuracy, kwargs, training_time)
-    
+
     return results
-        
-        
+
+
 # define the parameters for all experiments we want to run, in a compact way
 experiment_definitions = {
     'sklearn.naive_bayes.GaussianNB':
