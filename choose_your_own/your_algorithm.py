@@ -3,6 +3,7 @@
 import matplotlib.pyplot as plt
 import importlib
 import json
+import pandas as pd
 from time import time
 from itertools import product
 from prep_terrain_data import makeTerrainData
@@ -181,9 +182,21 @@ def create_classifiers(experiment_definitions):
 
 # define the parameters for all experiments we want to run, in a compact way
 experiment_definitions = {
+    'sklearn.naive_bayes.GaussianNB':
+        {},
     'sklearn.tree.DecisionTreeClassifier':
-        {'criterion': ['entropy', 'gini'],
-         'min_samples_split': [2, 4, 8, 16, 32, 64]}
+        {
+            'criterion': ['entropy', 'gini'],
+            'splitter': ['best', 'random'],
+            'min_samples_split': [2, 4, 8, 16, 32, 64]
+        },
+    'sklearn.svm.SVC':
+        {
+            'kernel': ['linear', 'rbf', 'sigmoid', 'poly'],
+            'gamma': ['auto', 'scale'],
+            'C': [10, 100, 1000, 10000],
+            'degree': [2, 3, 4, 5]
+         }
 }
 classifiers = create_classifiers(experiment_definitions)
 # print('classifiers: \n{}'.format(json.dumps(classifiers, indent=2)))
