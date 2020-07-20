@@ -157,12 +157,17 @@ def create_classifiers(experiment_definitions):
 
     Args:
         experiment_definitions : dictionary (of dictionaries)
-            This dictionary contains one element for each classification class/
+            Contains one element for each classification class/
             algorithm that we want to use to try to solve the problem at hand,
             with the respective value being another dictionary that has for
             keys the names of each one of the parameters that we want to tune,
             and as value a list of all the possible levels/values that we want
             this parameter to take.
+
+    Returns: 
+        classifiers : list
+            Contains the different classifier definitions that will be used to
+            fit the data an try to solve the classification problem.
     '''
     classifiers = {}
     for classifier, parameters in experiment_definitions.items():
