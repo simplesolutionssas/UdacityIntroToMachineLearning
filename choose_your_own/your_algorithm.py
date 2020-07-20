@@ -3,6 +3,7 @@
 import matplotlib.pyplot as plt
 import importlib
 from time import time
+from itertools import product
 from prep_terrain_data import makeTerrainData
 from class_vis import prettyPicture
 
@@ -147,29 +148,28 @@ def display_results(classifier, accuracy, parameters, training_time):
     visualize_decision_boundary(classifier)
 
 
-def unpack_parameters(parameters_list):
-    '''
-    '''
-    parameters = []
-    for parameter_name, parameter_values in parameters_list.items():
-        if len(parameters) == 0:
-            parameters = [{parameter_name: parameter_value}
-                          for parameter_value in parameter_values]
-        else:
-            parameters = [dict(parameter.items() +
-                               {parameter_name: parameter_value}.items())
-                          for parameter_value in parameter_values
-                          for parameter in parameters]
-
-    return parameters
-
-
 def create_classifiers(experiment_definitions):
     '''
+    Generate the different classifiers that will be used, with all their
+    parameters. The parameters definitions for each classifier are defined by
+    calculating the Cartesian product of all the possible values that we want
+    to test for all parameters for the respective algorithm/classifier class.
+
+    Args:
+        experiment_definitions : dictionary (of dictionaries)
+            This dictionary contains one element for each classification class/
+            algorithm that we want to use to try to solve the problem at hand,
+            with the respective value being another dictionary that has for
+            keys the names of each one of the parameters that we want to tune,
+            and as value a list of all the possible levels/values that we want
+            this parameter to take.
     '''
     classifiers = {}
-    for classifier_class, parameters_list in experiment_definitions.items():
-        classifiers[classifier_class] = unpack_parameters(parameters_list)
+    for classifier, parameters in experiment_definitions.items():
+        # solution taken from: https://stackoverflow.com/a/40623158/2316433
+        classifier_parameters = (dict(zip(parameters.keys(), values))
+                                 for values in product(*parameters.values()))
+        classifiers[classifier] = classifier_parameters
     return classifiers
 
 
@@ -180,7 +180,6 @@ experiment_definitions = {
          'min_samples_split': [2, 4, 8, 16, 32, 64]}
 }
 classifiers = create_classifiers(experiment_definitions)
-print('classifiers: \n{}'.format(classifiers))
 
 # create, fit and evaluate each classifier, selecting the best
 max_accuracy = 0
