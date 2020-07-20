@@ -2,6 +2,7 @@
 
 import matplotlib.pyplot as plt
 import importlib
+import json
 from time import time
 from itertools import product
 from prep_terrain_data import makeTerrainData
@@ -185,10 +186,7 @@ experiment_definitions = {
          'min_samples_split': [2, 4, 8, 16, 32, 64]}
 }
 classifiers = create_classifiers(experiment_definitions)
-print('classifiers: \n{}'.format(classifiers))
-
-# create, fit and evaluate each classifier, selecting the best
-max_accuracy = 0
+# print('classifiers: \n{}'.format(json.dumps(classifiers, indent=2)))
 visualize_dataset()
 for classifier_class, kwargs_list in classifiers.items():
     for kwargs in kwargs_list:
