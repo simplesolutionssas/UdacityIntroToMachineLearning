@@ -135,7 +135,7 @@ def display_best_result(results):
             Contains the relevant results for all the experiments.
     '''
     best_result = results.loc[results['accuracy'].idxmax()]
-    print('\nclass: {}'.format(best_result['class']))
+    print('class: {}'.format(best_result['class']))
     print('accuracy: {}'.format(best_result['accuracy']))
     print('parameters: {}'.format(best_result['parameters']))
     print('training time: {} s'.format(best_result['training time']))
@@ -160,11 +160,11 @@ def save_results(results, classifier, accuracy, parameters, training_time):
             It's the time it took to train the classifier.
     '''
     result = {}
-    result['classifier'] = classifier
     result['class'] = type(classifier).__name__
     result['accuracy'] = accuracy
-    result['parameters'] = parameters
     result['training time'] = training_time
+    result['parameters'] = parameters
+    result['classifier'] = classifier
     results.append(result)
 
 
@@ -246,5 +246,5 @@ classifiers = create_classifiers(experiment_definitions)
 visualize_dataset()
 results = pd.DataFrame(run_experiments(classifiers))
 print('\nselection finished. tests executed: {}'.format(len(results)))
-results.sort_values(by='accuracy', ascending=False).head(10)
 display_best_result(results)
+results.sort_values(by='accuracy', ascending=False).head()
