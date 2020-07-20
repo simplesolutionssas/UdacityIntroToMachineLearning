@@ -19,7 +19,7 @@ from email_preprocess import preprocess
 # labels_train and labels_test are the corresponding item labels
 features_train, features_test, labels_train, labels_test = preprocess()
 
-# on this file we'll use a smaller training set (1% of the orginal)
+# on this file we'll use a smaller training set (1% of the original)
 reduced_features_train = features_train[:len(features_train)/100]
 reduced_labels_train = labels_train[:len(labels_train)/100]
 
