@@ -125,29 +125,47 @@ def visualize_decision_boundary(classifier):
         pass
 
 
-def display_results(classifier, accuracy, parameters, training_time):
+def display_best_result(results):
     '''
     Auxiliary method to display all the relevant information for a particular
     result.
 
     Args:
+        results : DataFrame
+            Contains the relevant results for all the experiments.
+    '''
+    best_result = results.loc[results['accuracy'].idxmax()]
+    print('\nclass: {}'.format(best_result['class']))
+    print('accuracy: {}'.format(best_result['accuracy']))
+    print('parameters: {}'.format(best_result['parameters']))
+    print('training time: {} s'.format(best_result['training time']))
+    visualize_decision_boundary(best_result['classifier'])
+
+
+def save_results(results, classifier, accuracy, parameters, training_time):
+    '''
+    Auxiliary method to save all the relevant information for a particular
+    result to the results list.
+
+    Args:
+        results : list
+            Contains a dictionary per each result, with all relevant results.
         classifier : object
-            This is the instance of the class we used to classify the data, for
-            which we'll display the results.
+            Instance of the class used to classify the data.
         accuracy : float
-            It's the accuracy obtained after classifying the dataset with the
-            given classifier.
+            Accuracy obtained after fitting the dataset with the classifier.
         parameters : dictionary
-            This is a dictionary with the particular parameters used to create
-            and fit the classifier that obtained these results.
+            Contains the parameters used to create and fit the classifier.
         training_time : float
             It's the time it took to train the classifier.
     '''
-    print('\nclass: {}'.format(type(classifier).__name__))
-    print('accuracy: {}'.format(accuracy))
-    print('parameters: {}'.format(parameters))
-    print('training time: {} s'.format(training_time))
-    visualize_decision_boundary(classifier)
+    result = {}
+    result['classifier'] = classifier
+    result['class'] = type(classifier).__name__
+    result['accuracy'] = accuracy
+    result['parameters'] = parameters
+    result['training time'] = training_time
+    results.append(result)
 
 
 def create_classifiers(experiment_definitions):
@@ -166,7 +184,7 @@ def create_classifiers(experiment_definitions):
             and as value a list of all the possible levels/values that we want
             this parameter to take.
 
-    Returns: 
+    Returns:
         classifiers : list
             Contains the different classifier definitions that will be used to
             fit the data an try to solve the classification problem.
@@ -180,6 +198,31 @@ def create_classifiers(experiment_definitions):
     return classifiers
 
 
+def run_experiments(classifiers):
+    '''
+    Uses the different classifier definitions stored in classifiers, to execute
+    all the experiments and collect their results. 
+
+    Args:
+        classifiers : list
+            Contains the different classifier definitions that will be used to
+            fit the data an try to solve the classification problem.
+
+    Results:
+        results : list (of dictionaries)
+            Contains the relevant results for all the experiments.
+    '''
+    # create, fit and evaluate each classifier, selecting the best
+    results = []
+    for classifier_class, kwargs_list in classifiers.items():
+        for kwargs in kwargs_list:
+            classifier = get_classifier(classifier_class, **kwargs)
+            accuracy, training_time = train(classifier)
+            save_results(results, classifier, accuracy, kwargs, training_time)
+    
+    return results
+        
+        
 # define the parameters for all experiments we want to run, in a compact way
 experiment_definitions = {
     'sklearn.naive_bayes.GaussianNB':
@@ -201,12 +244,7 @@ experiment_definitions = {
 classifiers = create_classifiers(experiment_definitions)
 # print('classifiers: \n{}'.format(json.dumps(classifiers, indent=2)))
 visualize_dataset()
-for classifier_class, kwargs_list in classifiers.items():
-    for kwargs in kwargs_list:
-        classifier = get_classifier(classifier_class, **kwargs)
-        accuracy, training_time = train(classifier)
-        if accuracy > max_accuracy:
-            max_accuracy = accuracy
-            display_results(classifier, accuracy, kwargs, training_time)
-
-print('selection finished')
+results = pd.DataFrame(run_experiments(classifiers))
+print('\nselection finished. tests executed: {}'.format(len(results)))
+results.sort_values(by='accuracy', ascending=False).head(10)
+display_best_result(results)
