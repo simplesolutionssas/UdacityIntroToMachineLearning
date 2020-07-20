@@ -167,8 +167,8 @@ def create_classifiers(experiment_definitions):
     classifiers = {}
     for classifier, parameters in experiment_definitions.items():
         # solution taken from: https://stackoverflow.com/a/40623158/2316433
-        classifier_parameters = (dict(zip(parameters.keys(), values))
-                                 for values in product(*parameters.values()))
+        classifier_parameters = [dict(zip(parameters.keys(), values))
+                                 for values in product(*parameters.values())]
         classifiers[classifier] = classifier_parameters
     return classifiers
 
@@ -180,6 +180,7 @@ experiment_definitions = {
          'min_samples_split': [2, 4, 8, 16, 32, 64]}
 }
 classifiers = create_classifiers(experiment_definitions)
+print('classifiers: \n{}'.format(classifiers))
 
 # create, fit and evaluate each classifier, selecting the best
 max_accuracy = 0
