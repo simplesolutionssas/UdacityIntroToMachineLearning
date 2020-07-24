@@ -125,21 +125,27 @@ def visualize_decision_boundary(classifier):
         pass
 
 
-def display_best_result(results):
+def display_best_results(results, results_to_show):
     '''
     Auxiliary method to display all the relevant information for a particular
-    result.
+    number of top results.
 
     Args:
         results : DataFrame
             Contains the relevant results for all the experiments.
+        results_to_show : int
+            Is the number of top results that have to be displayed.
     '''
-    best_result = results.loc[results['accuracy'].idxmax()]
-    print('class: {}'.format(best_result['class']))
-    print('accuracy: {}'.format(best_result['accuracy']))
-    print('parameters: {}'.format(best_result['parameters']))
-    print('training time: {} s'.format(best_result['training time']))
-    visualize_decision_boundary(best_result['classifier'])
+    results.sort_values(by=['accuracy', 'training time'], ascending=[False, True],
+                        inplace=True)
+    results.reset_index(drop=True, inplace=True)
+    for result in range(results_to_show):
+        top_result = results.loc[result]
+        print('\nclass: {}'.format(top_result['class']))
+        print('accuracy: {}'.format(top_result['accuracy']))
+        print('parameters: {}'.format(top_result['parameters']))
+        print('training time: {} s'.format(top_result['training time']))
+        visualize_decision_boundary(top_result['classifier'])
 
 
 def save_results(results, classifier, accuracy, parameters, training_time):
@@ -253,5 +259,4 @@ classifiers = create_classifiers(experiment_definitions)
 visualize_dataset()
 results = pd.DataFrame(run_experiments(classifiers))
 print('\nselection finished. tests executed: {}'.format(len(results)))
-display_best_result(results)
-results.sort_values(by='accuracy', ascending=False).head()
+display_best_results(results, 5)
