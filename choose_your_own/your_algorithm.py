@@ -136,8 +136,8 @@ def display_best_results(results, results_to_show):
         results_to_show : int
             Is the number of top results that have to be displayed.
     '''
-    results.sort_values(by=['accuracy', 'training time'], ascending=[False, True],
-                        inplace=True)
+    results.sort_values(by=['accuracy', 'training time'],
+                        ascending=[False, True], inplace=True)
     results.reset_index(drop=True, inplace=True)
     for result in range(results_to_show):
         top_result = results.loc[result]
