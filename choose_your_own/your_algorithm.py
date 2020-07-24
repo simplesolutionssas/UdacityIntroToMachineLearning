@@ -239,7 +239,14 @@ experiment_definitions = {
             'gamma': ['auto', 'scale'],
             'C': [10, 100, 1000, 10000],
             'degree': [2, 3, 4, 5]
-         }
+         },
+    'sklearn.neighbors.KNeighborsClassifier':
+        {
+            'n_neighbors': [2, 4, 8, 16, 32, 64],
+            'weights': ['uniform', 'distance'],
+            'algorithm': ['ball_tree', 'kd_tree', 'brute'],
+            'p': [1, 2]
+        }
 }
 classifiers = create_classifiers(experiment_definitions)
 # print('classifiers: \n{}'.format(json.dumps(classifiers, indent=2)))
