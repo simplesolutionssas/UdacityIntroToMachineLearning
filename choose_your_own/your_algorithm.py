@@ -252,6 +252,14 @@ experiment_definitions = {
             'weights': ['uniform', 'distance'],
             'algorithm': ['ball_tree', 'kd_tree', 'brute'],
             'p': [1, 2]
+        },
+    'sklearn.ensemble.RandomForestClassifier':
+        {
+            'n_estimators': [8, 16, 32, 64],
+            'criterion': ['entropy', 'gini'],
+            'min_samples_split': [2, 4, 8, 16, 32, 64],
+            'max_depth': [2, 4, 8, 16],
+            'max_features': [None, 'sqrt', 'log2']
         }
 }
 classifiers = create_classifiers(experiment_definitions)
