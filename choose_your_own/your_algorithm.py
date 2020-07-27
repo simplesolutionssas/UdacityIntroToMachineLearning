@@ -265,6 +265,9 @@ experiment_definitions = {
 classifiers = create_classifiers(experiment_definitions)
 # print('classifiers: \n{}'.format(json.dumps(classifiers, indent=2)))
 visualize_dataset()
+total_start_time = time()
 results = pd.DataFrame(run_experiments(classifiers))
-print('\nselection finished. tests executed: {}'.format(len(results)))
+total_training_time = round(time()-total_start_time, 3)
+print('\nselection finished. tests executed: {}. total training time: {} s.'
+      .format(len(results), total_training_time))
 display_best_results(results, 5)
