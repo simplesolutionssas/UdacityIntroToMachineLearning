@@ -260,6 +260,12 @@ experiment_definitions = {
             'min_samples_split': [2, 4, 8, 16, 32, 64],
             'max_depth': [2, 4, 8, 16],
             'max_features': [None, 'sqrt', 'log2']
+        },
+    'sklearn.ensemble.AdaBoostClassifier':
+        {
+            'n_estimators': [8, 16, 32, 64, 128],
+            'algorithm': ['SAMME', 'SAMME.R'],
+            'learning_rate': [0.01, 0.05, 0.1, 0.3, 1]
         }
 }
 classifiers = create_classifiers(experiment_definitions)
