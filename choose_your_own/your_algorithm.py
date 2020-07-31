@@ -6,8 +6,8 @@ import json
 import pandas as pd
 from time import time
 from itertools import product
-from prep_terrain_data import makeTerrainData
-from class_vis import prettyPicture
+from .prep_terrain_data import makeTerrainData
+from .class_vis import prettyPicture
 # imports required to use different base estimators for AdaBoost experiments
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
