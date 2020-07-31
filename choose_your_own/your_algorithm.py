@@ -8,6 +8,9 @@ from time import time
 from itertools import product
 from prep_terrain_data import makeTerrainData
 from class_vis import prettyPicture
+# imports required to use different base estimators for AdaBoost experiments
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
 
 features_train, labels_train, features_test, labels_test = makeTerrainData()
 
@@ -263,8 +266,11 @@ experiment_definitions = {
         },
     'sklearn.ensemble.AdaBoostClassifier':
         {
+            'base_estimator': [None,
+                               SVC(kernel='poly', gamma='scale', degree=5),
+                               DecisionTreeClassifier(splitter='random')],
             'n_estimators': [8, 16, 32, 64, 128],
-            'algorithm': ['SAMME', 'SAMME.R'],
+            'algorithm': ['SAMME'],
             'learning_rate': [0.01, 0.05, 0.1, 0.3, 1]
         }
 }
