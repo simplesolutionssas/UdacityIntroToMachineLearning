@@ -48,7 +48,8 @@ prediction_test = reg.predict(feature_test)
 print('train fit - slope: {}, intercept: {}'.format(reg.coef_, reg.intercept_))
 train_score = reg.score(feature_train, target_train)
 test_score = reg.score(feature_test, target_test)
-print('train score: {:.2%}, test score: {:.2%}'.format(train_score, test_score))
+print('train score: {:.2%}, test score: {:.2%}'.
+      format(train_score, test_score))
 
 # draw the scatterplot, with color-coded training and testing points
 for feature, target in zip(feature_test, target_test):
@@ -75,7 +76,8 @@ prediction_test = reg.predict(feature_test)
 print('test fit - slope: {}, intercept: {}'.format(reg.coef_, reg.intercept_))
 train_score = reg.score(feature_train, target_train)
 test_score = reg.score(feature_test, target_test)
-print('train score: {:.2%}, test score: {:.2%}'.format(train_score, test_score))
+print('train score: {:.2%}, test score: {:.2%}'.
+      format(train_score, test_score))
 plt.plot(feature_train, reg.predict(feature_train), color='b')
 
 plt.xlabel(features_list[1])
