@@ -5,7 +5,9 @@
 """
 
 import pickle
-import numpy
+import numpy as np
+import pandas as pd
+from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import sys
 from sklearn.cluster import KMeans
@@ -47,16 +49,19 @@ enron_data.pop("TOTAL", 0)
 # (salary, director_fees, etc.)
 feature_1 = "salary"
 feature_2 = "exercised_stock_options"
+feature_3 = "total_payments"
 poi = "poi"
-features_list = [poi, feature_1, feature_2]
+features_list = [poi, feature_1, feature_2, feature_3]
 data = featureFormat(enron_data, features_list)
 poi, finance_features = targetFeatureSplit(data)
 
 # in the "clustering with 3 features" part of the mini-project, you'll want to
 # change this line to for f1, f2, _ in finance_features:
 # (as it's currently written, the line below assumes 2 features)
-for f1, f2 in finance_features:
-    plt.scatter(f1, f2)
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+for f1, f2, f3 in finance_features:
+    ax.scatter(f1, f2, f3, c='r', marker='o')
 plt.show()
 
 # create predictions of the cluster labels for the data and store them on pred
@@ -70,3 +75,12 @@ try:
          f1_name=feature_1, f2_name=feature_2)
 except NameError:
     print('no predictions object named pred found, no clusters to plot')
+
+# construct and explore the enron_df DataFrame
+enron_df = pd.DataFrame.from_dict(enron_data, orient='index')
+# convert the 'Nan' strings into real NaN values
+enron_df.replace('NaN', np.nan, regex=True, inplace=True)
+# describe the exercised_stock_options DataFrame series
+print(enron_df.exercised_stock_options.describe())
+# describe the salary DataFrame series
+print(enron_df.salary.describe())

@@ -12,3 +12,4 @@ my_feature_list.pkl
 .vscode/.ropeproject/config.py
 .vscode/.ropeproject/objectdb
 choose_your_own/test.png
+k_means/clusters.pdf
