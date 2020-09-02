@@ -51,7 +51,8 @@ for name, from_person in [('sara', from_sara), ('chris', from_chris)]:
             parsed_text = parseOutText(email)
 
             # remove signature words
-            signature_words = ['sara', 'shackleton', 'chris', 'germani']
+            signature_words = ['sara', 'shackleton', 'chris', 'germani',
+                               'sshacklensf', 'cgermannsf']
             for word in signature_words:
                 parsed_text = parsed_text.replace(word, '')
 
