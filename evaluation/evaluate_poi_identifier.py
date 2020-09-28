@@ -61,7 +61,7 @@ recall = recall_score(labels_test, predictions)
 print('identifier accuracy: {}, precision: {}, recall: {}'
       .format(accuracy, precision, recall))
 
-# hypothetical test set 
+# hypothetical test set
 hyp_predictions = [0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1]
 true_labels = [0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0]
 true_positives = [prediction == label for (prediction, label)
