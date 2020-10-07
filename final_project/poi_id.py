@@ -9,10 +9,11 @@ from matplotlib import pyplot as plt
 from pandas import DataFrame
 from sklearn.metrics.classification import f1_score, precision_score
 from sklearn.metrics.classification import recall_score
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.decomposition import PCA
 from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import train_test_split, StratifiedShuffleSplit
@@ -21,72 +22,393 @@ sys.path.append("../tools/")
 from feature_format import featureFormat, targetFeatureSplit
 
 
-# Load the dictionary containing the dataset
-file_path = 'final_project_dataset.pkl'
-file = open(file_path, 'r')
-enron_data = pickle.load(file)
-file.close()
+def load_data(file_path):
+    '''
+    Retrieve the dataset stored in the specific pickle file path.
 
-# Remove the TOTAL row from the dataset
-enron_data.pop('TOTAL', 0)
-print('Enron data point count: {}'.format(len(enron_data)))
+    Args:
+        file_path : string
+            The absolute file path for the pickle file containing the data.
 
-# Put the dictionary in a DataFrame and perform some cleaning operations
-pd.options.display.float_format = '{:20,.2f}'.format
-enron_df = DataFrame.from_dict(enron_data, orient='index')
-# All NaN strings are converted to Numpy nan values, which allows the describe
-# function to produce proper numeric values for all statistics. 
-enron_df.replace('NaN', np.nan, regex=True, inplace=True)
-# Convert True to 1 and False to 0.
-enron_df.replace({True: 1, False: 0}, inplace=True)
-enron_df.drop('email_address', axis=1, inplace=True)
-enron_df.head()
-enron_df.describe()
-
-# Task 1: Select what features you'll use.
-# financial features (all units are in US dollars):
-#   'salary', 'deferral_payments', 'total_payments', 'loan_advances', 'bonus',
-#   'restricted_stock_deferred', 'deferred_income', 'total_stock_value',
-#   'expenses', 'exercised_stock_options', 'other', 'long_term_incentive',
-#   'restricted_stock', 'director_fees'
-# email features (‘email_address’ is string, the rest, email message counts):
-#   'email_address', 'to_messages', 'from_poi_to_this_person', 'from_messages',
-#   'from_this_person_to_poi', 'shared_receipt_with_poi']
-# POI label: (boolean, represented as integer)
-#   ‘poi’
-# features_list is a list of strings, each of which is a feature name.
-# The first feature must be "poi". You will need to use more features.
-features_list = ['poi', 'salary', 'deferral_payments', 'total_payments',
-                 'loan_advances', 'bonus', 'restricted_stock_deferred',
-                 'deferred_income', 'total_stock_value', 'expenses',
-                 'exercised_stock_options', 'other', 'long_term_incentive',
-                 'restricted_stock', 'director_fees', 'to_messages',
-                 'from_poi_to_this_person', 'from_messages',
-                 'from_this_person_to_poi', 'shared_receipt_with_poi']
-
-# Plot the variables to understand them better.
-# for col in enron_df.columns:
-#     enron_df.hist(column=col, bins=100, alpha=0.5)
+    Returns:
+        dataset : dictionary
+            Dictionary containing the data stored in the file, in a structured
+            format.
+    '''
+    # Load the dictionary containing the dataset
+    file = open(file_path, 'r')
+    dataset = pickle.load(file)
+    file.close()
+    return dataset
 
 
-# Task 2: Remove outliers
+def get_enron_feature_list():
+    '''
+    Retrieve the feature list to be used for the Enron POI classification
+    problem:
 
-# Task 3: Create new feature(s)
-# Store to my_dataset for easy export below.
-my_dataset = enron_data
+    Financial features (all units are in US dollars):
+        salary, deferral_payments, total_payments, loan_advances, bonus,
+        restricted_stock_deferred, deferred_income, total_stock_value,
+        expenses, exercised_stock_options, other, long_term_incentive,
+        restricted_stock, director_fees
+    Email features ('email_address' is string, the rest, email message counts):
+        email_address, to_messages, from_poi_to_this_person, from_messages,
+        from_this_person_to_poi, shared_receipt_with_poi
+    POI label (boolean, represented as integer):
+        poi
 
-# Extract features and labels from dataset for local testing
-data = featureFormat(my_dataset, features_list, sort_keys=True)
-labels, features = targetFeatureSplit(data)
-labels = np.array(labels)
-features = np.array(features)
+    Args:
+        None
+
+    Returns:
+        features_list : list
+            The list of features that will be used for solving the POI
+            classification problem.
+    '''
+    # The first feature must be "poi".
+    features_list = ['poi', 'salary', 'deferral_payments', 'total_payments',
+                     'loan_advances', 'bonus', 'restricted_stock_deferred',
+                     'deferred_income', 'total_stock_value', 'expenses',
+                     'exercised_stock_options', 'other', 'long_term_incentive',
+                     'restricted_stock', 'director_fees', 'to_messages',
+                     'from_poi_to_this_person', 'from_messages',
+                     'from_this_person_to_poi', 'shared_receipt_with_poi']
+    return features_list
+
+
+def get_enron_labels_features(enron_data, enron_feature_list):
+    '''
+    Retrieve the labels and features for the Enron dataset, after applying
+    some cleaning operations.
+
+    Args:
+        enron_data : dictionary
+            Dictionary containing the data stored in the file, in a structured
+            format.
+        enron_feature_list : list
+            The list of features that needs to be extracted from the dictionary
+            and returned for the classification problem. The first feature on
+            the list needs to contain the data labels. 
+
+    Returns:
+        labels : ndarray
+            Array with the labels for each data point in the enron dataset.
+        features : ndarray
+            Array with the features for each data point in the enron dataset.
+    '''
+    # Remove the TOTAL row from the dataset
+    enron_data.pop('TOTAL', 0)
+    data = featureFormat(enron_data, enron_feature_list, sort_keys=True)
+    labels, features = targetFeatureSplit(data)
+    labels = np.array(labels)
+    features = np.array(features)
+    print('Enron Data Point Count: {}'.format(len(enron_data)))
+    return labels, features
+
+
+def remove_enron_outliers(labels, features):
+    '''
+    Return the labels and features for the Enron dataset, after eliminating the
+    outlier data points from the different features.
+
+    Args:
+        labels : ndarray
+            Array with the labels for each data point in the enron dataset.
+        features : ndarray
+            Array with the features for each data point in the enron dataset.
+
+    Returns:
+        labels : ndarray
+            Array with the labels for each data point, after having removed
+            all outliers from them.
+        features : ndarray
+            Array with the features for each data point, after having removed
+            all outliers from them.
+
+    '''
+    # TODO Task 2: Remove outliers
+    return labels, features
+
+
+def add_enron_features(labels, features):
+    '''
+    Return the labels and features for the Enron dataset, after adding new
+    relevant features to help improve the classification performance.
+
+    Args:
+        labels : ndarray
+            Array with the labels for each data point in the enron dataset.
+        features : ndarray
+            Array with the features for each data point in the enron dataset.
+
+    Returns:
+        labels : ndarray
+            Array with the labels for each data point, after adding the new
+            features.
+        features : ndarray
+            Array with the features for each data point, after adding the new
+            features.
+    '''
+    # TODO Task 3: Create new feature(s)
+    return labels, features
+
+
+def get_pipelines():
+    '''
+    Build the different pipelines that will be used to train and finetune the
+    classification model.
+
+    Args:
+        None
+
+    Returns:
+        pipelines : dictionary
+            A dictionary containing all the pipelines that will be used to fit
+            the model in order to select the one that produces the best results
+            for the given problem.
+    '''
+    # Pipeline:
+    # 1. scale
+    # 2. reduce_dim
+    # 3. stratified_shuffle_split
+    # 4. classify
+    # scaler = MinMaxScaler()
+    # pca = PCA()
+    # pipelines = {
+    #     'sklearn.svm.SVC':
+    #         {
+    #             'kernel': ['linear', 'rbf', 'sigmoid', 'poly'],
+    #             'gamma': ['auto', 'scale'],
+    #             'C': [10, 100, 1000, 10000],
+    #             'degree': [2, 3, 4, 5]
+    #         },
+    #     'sklearn.neighbors.KNeighborsClassifier':
+    #         {
+    #             'n_neighbors': [2, 4, 8, 16, 32, 64],
+    #             'weights': ['uniform', 'distance'],
+    #             'algorithm': ['ball_tree', 'kd_tree', 'brute'],
+    #             'p': [1, 2]
+    #         },
+    #     'sklearn.ensemble.RandomForestClassifier':
+    #         {
+    #             'n_estimators': [8, 16, 32, 64],
+    #             'criterion': ['entropy', 'gini'],
+    #             'min_samples_split': [2, 4, 8, 16, 32, 64],
+    #             'max_depth': [2, 4, 8, 16],
+    #             'max_features': [None, 'sqrt', 'log2']
+    #         },
+    #     'sklearn.ensemble.AdaBoostClassifier':
+    #         {
+    #             'base_estimator': [None,
+    #                                SVC(kernel='poly', gamma='scale', degree=5),
+    #                                DecisionTreeClassifier(splitter='random')],
+    #             'n_estimators': [8, 16, 32, 64, 128],
+    #             'algorithm': ['SAMME'],
+    #             'learning_rate': [0.01, 0.05, 0.1, 0.3, 1]
+    #         },
+    #     'sklearn.cluster.KMeans':
+    #         {
+    #             'n_clusters': [2, 4, 6, 8, 16]
+    #         }
+    # }
+    pipelines = {
+        'GaussianNB': {
+            'pipe': [('reduce_dim', PCA()),
+                     ('classify', GaussianNB())],
+            'param_grid': [{
+                'reduce_dim': [PCA()],
+                'reduce_dim__n_components': [2, 4, 8, 16],
+            }]
+        },
+        'DecisionTreeClassifier': {
+            'pipe': [('reduce_dim', PCA()),
+                     ('classify', DecisionTreeClassifier(random_state=42))],
+            'param_grid': [{
+                'reduce_dim': [PCA()],
+                'reduce_dim__n_components': [2, 4, 8, 16],
+                'classify__criterion': ['entropy', 'gini'],
+                'classify__splitter': ['best', 'random'],
+                'classify__min_samples_split': [2, 4, 8, 16, 32, 64]
+            }]
+        }
+    }
+    return pipelines
+
+
+def get_best_estimator_metrics(results, metrics):
+    '''
+    Process the search results DataFrame and extract from it the metrics for
+    the best estimator.
+
+    Args:
+        results : DataFrame
+            DataFrame with the results of the grid search.
+        metrics : list
+            List containing the names of the metrics evaluated for the
+            estimator during the search. The first metric in the list is
+            assumed to be the main metric, which was used to select the best
+            estimator.
+
+    Returns:
+        estimator_metrics : list
+            List containing the best estimator's values for the metrics
+            evaluated during the search.
+    '''
+    estimator_metrics = []
+    best_estimator_string = 'Best Estimator {}: {:.4f}'
+
+    main_metric_name = 'mean_test_' + metrics[0]
+    main_metric_results = results[main_metric_name]
+    main_metric_value = max(main_metric_results)
+    main_metric_index = np.argmax(main_metric_results, axis=0)
+    print(best_estimator_string.format(metrics[0].title(), main_metric_value))
+    estimator_metrics.append(main_metric_value)
+
+    for metric in metrics[1:]:
+        full_metric_name = 'mean_test_' + metric
+        metric_results = results[full_metric_name]
+        metric_value = metric_results[main_metric_index]
+        print(best_estimator_string.format(metric.title(), metric_value))
+        estimator_metrics.append(metric_value)
+
+    return estimator_metrics
+
+
+def plot_estimator_metrics(estimator, results):
+    '''
+    Generate a graphic graphic comparing the results obtained for each one of
+    the different candidates, for each one of the different scoring metrics
+    used for the estimator search.
+
+    Args:
+        estimator : string
+            The name of the estimator whose results are going to be plotted.
+        results : DataFrame
+            DataFrame with the results of the grid search.
+
+    Returns:
+        None
+    '''
+    plt.title(estimator + " Results", fontsize=16)
+    plt.xlabel("reduce_dim__n_components")
+    plt.ylabel("Score")
+    ax = plt.gca()
+    ax.set_xlim(0, 16)
+    ax.set_ylim(0.0, 1)
+
+    # TODO: generalize this code to accept more than 16 experiments.
+    # Get the regular numpy array from the MaskedArray
+    X_axis = np.array(results['param_reduce_dim__n_components'].data,
+                      dtype=float)
+
+    for scorer, color in zip(sorted(metrics), ['g', 'k', 'b', 'r']):
+        for sample, style in (('train', '--'), ('test', '-')):
+            sample_score_mean = results['mean_%s_%s' % (sample, scorer)]
+            sample_score_std = results['std_%s_%s' % (sample, scorer)]
+            ax.fill_between(X_axis, sample_score_mean - sample_score_std,
+                            sample_score_mean + sample_score_std,
+                            alpha=0.1 if sample == 'test' else 0, color=color)
+            ax.plot(X_axis, sample_score_mean, style, color=color,
+                    alpha=1 if sample == 'test' else 0.7,
+                    label="%s (%s)" % (scorer, sample))
+
+        best_index = np.nonzero(results['rank_test_%s' % scorer] == 1)[0][0]
+        best_score = results['mean_test_%s' % scorer][best_index]
+
+        # For each scorer, plot a dotted vertical line marked by x,
+        # at the best score obtained
+        ax.plot([X_axis[best_index], ] * 2, [0, best_score],
+                linestyle='-.', color=color, marker='x', markeredgewidth=3,
+                ms=8)
+
+        # Annotate the best score for that scorer
+        ax.annotate("%0.2f" % best_score,
+                    (X_axis[best_index], best_score + 0.005))
+
+    plt.legend(loc="best")
+    plt.grid(False)
+    plt.show()
+
+
+def get_best_estimator(pipelines, cv_strategy, metrics):
+    '''
+    Get the best estimator from the pipelines, cross validation, metrics and
+    refit metrics specified for the search strategy.
+
+    Args:
+        pipelines : dictionary
+            Dictionary with specification of the different pipelines we want to
+            use to try and solve this particular problem.
+        cv_strategy : cross-validation generator
+            Method from the model_selection package that defines a cross
+            validation strategy to be used for this particular problem.
+        metrics : list
+            List containing the different metrics we want to measure for each
+            one of the evaluated estimators. The first metric in the list is
+            assumed to be the main metric to use for choosing the best
+            estimator.
+
+    Returns:
+        estimator : Object
+            This is the best estimator that was found during the search.
+    '''
+    print('Performing Model Optimizations...')
+    best_main_metric_value = 0.0
+    best_estimator = ''
+    for estimator, pipeline_definition in pipelines.items():
+        print('\nAnalyzing {}...'.format(estimator))
+        pipeline = Pipeline(pipeline_definition['pipe'])
+        param_grid = pipeline_definition['param_grid']
+        clf = GridSearchCV(pipeline, param_grid=param_grid, cv=cv_strategy,
+                           scoring=metrics, refit=metrics[0], n_jobs=8,
+                           iid=False, verbose=2, return_train_score=True,)
+        clf.fit(features, labels)
+        results = clf.cv_results_
+        print('\nBest {} Found:\n{}\n'.format(estimator, clf.best_estimator_))
+        best_estimator_metrics = get_best_estimator_metrics(results, metrics)
+        plot_estimator_metrics(estimator, results)
+        if best_estimator_metrics[0] > best_main_metric_value:
+            best_estimator = clf.best_estimator_
+            best_main_metric_value = best_estimator_metrics[0]
+
+    return best_estimator
+
+
+def plot_features(dataframe):
+    '''
+    Generate a graphic for each one of the features in a dataframe, in order to
+    visualize and help detect easily any outliers present on the data.
+    '''
+    # Plot the variables to understand them better.
+    for col in dataframe.columns:
+        dataframe.hist(column=col, bins=100, alpha=0.5)
+
+
+enron_data = load_data('final_project_dataset.pkl')
+enron_feature_list = get_enron_feature_list()
+labels, features = get_enron_labels_features(enron_data, enron_feature_list)
+labels, features = remove_enron_outliers(labels, features)
+labels, features = add_enron_features(labels, features)
+pipelines = get_pipelines()
+# For cross-validation we'll use a stratified shuffle split because of the
+# small size of the dataset.
+cv_strategy = StratifiedShuffleSplit(n_splits=10, random_state=42)
+# We define all the scoring metrics we want to measure. Recall will be the one
+# used to select the best set of parameters, and refit the identifier, because
+# in this case false positives are far better than false negatives, since we
+# don't want to risk missing ani pois. Recall needs to be the first metric on
+# the list, because get_best_estimator assumes the one in that position to be
+# the main metric to evaluate the select estimator.
+metrics = ['recall', 'accuracy', 'precision', 'f1']
+best_estimator = get_best_estimator(pipelines, cv_strategy, metrics)
+print('\nBest Overall Estimator Found:\n{}\n'.format(best_estimator))
 
 # Task 4: Try a variety of classifiers
 # Please name your classifier clf for easy export below.
 # Note that if you want to do PCA or other multi-stage operations,
 # you'll need to use Pipelines. For more info:
 # http://scikit-learn.org/stable/modules/pipeline.html
-
 
 # Task 5: Tune your classifier to achieve better than .3 precision and recall
 # using our testing script. Check the tester.py script in the final project
@@ -96,150 +418,26 @@ features = np.array(features)
 # http://scikit-learn.org/stable/modules/generated/sklearn.cross_validation.StratifiedShuffleSplit.html
 
 
+# # Put the dictionary in a DataFrame and perform some cleaning operations.
+# pd.options.display.float_format = '{:20,.2f}'.format
+# enron_df = DataFrame.from_dict(enron_data, orient='index')
+# # All NaN strings are converted to Numpy nan values, which allows the describe.
+# # function to produce proper numeric values for all statistics.
+# enron_df.replace('NaN', np.nan, regex=True, inplace=True)
+# # Convert True to 1 and False to 0.
+# enron_df.replace({True: 1, False: 0}, inplace=True)
+# enron_df.drop('email_address', axis=1, inplace=True)
+# # plot_features(enron_df)
+# enron_df.head()
+# enron_df.describe()
 
-
-# Pipeline:
-# 1. scale
-# 2. reduce_dim
-# 3. stratified_shuffle_split
-# 4. classify
-
-
-# for train_index, test_index in sss.split(features, labels):
-#     features_train, features_test = features[train_index], features[test_index]
-#     labels_train, labels_test = labels[train_index], labels[test_index]
-
-# features_train, features_test, labels_train, labels_test = \
-#     train_test_split(features, labels, test_size=0.3, random_state=42)
-
-# all stages are populated by the param_grid
-pipe = Pipeline([('reduce_dim', PCA()),
-                 ('classify', DecisionTreeClassifier(random_state=42))])
-
-pca_n_components = [2, 4, 8, 16]
-
-param_grid = [
-    {
-        'reduce_dim': [PCA()],
-        'reduce_dim__n_components': pca_n_components,
-    }
-]
-
-# For cross-validation we'll use a stratified shuffle split because of the
-# small size of the dataset.
-cv_strategy = StratifiedShuffleSplit(n_splits=1000, random_state=42)
-
-# We define all the scoring metrics we want to measure. But Recall will be the
-# one used to select the best set of parameters, and refit the identifier at
-# the end, because in my opinion false positives are far better than false
-# negatives in this case, since we don't want to produce any false negatives
-# and risk missing a poi.
-scoring = {'Accuracy': 'accuracy', 'Recall': 'recall',
-           'Precision': 'precision', 'F1 Score': 'f1'}
-
-clf = GridSearchCV(pipe, n_jobs=8, param_grid=param_grid, cv=cv_strategy,
-                   scoring=scoring, iid=False, refit='Recall', verbose=2,
-                   return_train_score=True)
-best_model = clf.fit(features, labels)
-results = clf.cv_results_
-print('\nBest estimator:\n{}\n'.format(clf.best_estimator_))
-for metric_name, metric in scoring.items():
-    result_name = 'mean_test_' + metric_name
-    result = results[result_name]
-    print('Best estimator {}: {}'.format(metric, result))
-
-plt.title("GridSearchCV results",
-          fontsize=16)
-
-plt.xlabel("reduce_dim__n_components")
-plt.ylabel("Score")
-
-ax = plt.gca()
-ax.set_xlim(0, 16)
-ax.set_ylim(0.0, 1)
-
-# Get the regular numpy array from the MaskedArray
-X_axis = np.array(results['param_reduce_dim__n_components'].data, dtype=float)
-
-for scorer, color in zip(sorted(scoring), ['g', 'k', 'b', 'r']):
-    for sample, style in (('train', '--'), ('test', '-')):
-        sample_score_mean = results['mean_%s_%s' % (sample, scorer)]
-        sample_score_std = results['std_%s_%s' % (sample, scorer)]
-        ax.fill_between(X_axis, sample_score_mean - sample_score_std,
-                        sample_score_mean + sample_score_std,
-                        alpha=0.1 if sample == 'test' else 0, color=color)
-        ax.plot(X_axis, sample_score_mean, style, color=color,
-                alpha=1 if sample == 'test' else 0.7,
-                label="%s (%s)" % (scorer, sample))
-
-    best_index = np.nonzero(results['rank_test_%s' % scorer] == 1)[0][0]
-    best_score = results['mean_test_%s' % scorer][best_index]
-
-    # Plot a dotted vertical line at the best score for that scorer marked by x
-    ax.plot([X_axis[best_index], ] * 2, [0, best_score],
-            linestyle='-.', color=color, marker='x', markeredgewidth=3, ms=8)
-
-    # Annotate the best score for that scorer
-    ax.annotate("%0.2f" % best_score,
-                (X_axis[best_index], best_score + 0.005))
-
-plt.legend(loc="best")
-plt.grid(False)
-plt.show()
-
-
-experiment_definitions = {
-    'sklearn.naive_bayes.GaussianNB':
-        {},
-    'sklearn.tree.DecisionTreeClassifier':
-        {
-            'criterion': ['entropy', 'gini'],
-            'splitter': ['best', 'random'],
-            'min_samples_split': [2, 4, 8, 16, 32, 64]
-        },
-    'sklearn.svm.SVC':
-        {
-            'kernel': ['linear', 'rbf', 'sigmoid', 'poly'],
-            'gamma': ['auto', 'scale'],
-            'C': [10, 100, 1000, 10000],
-            'degree': [2, 3, 4, 5]
-         },
-    'sklearn.neighbors.KNeighborsClassifier':
-        {
-            'n_neighbors': [2, 4, 8, 16, 32, 64],
-            'weights': ['uniform', 'distance'],
-            'algorithm': ['ball_tree', 'kd_tree', 'brute'],
-            'p': [1, 2]
-        },
-    'sklearn.ensemble.RandomForestClassifier':
-        {
-            'n_estimators': [8, 16, 32, 64],
-            'criterion': ['entropy', 'gini'],
-            'min_samples_split': [2, 4, 8, 16, 32, 64],
-            'max_depth': [2, 4, 8, 16],
-            'max_features': [None, 'sqrt', 'log2']
-        },
-    'sklearn.ensemble.AdaBoostClassifier':
-        {
-            'base_estimator': [None,
-                               SVC(kernel='poly', gamma='scale', degree=5),
-                               DecisionTreeClassifier(splitter='random')],
-            'n_estimators': [8, 16, 32, 64, 128],
-            'algorithm': ['SAMME'],
-            'learning_rate': [0.01, 0.05, 0.1, 0.3, 1]
-        },
-    'sklearn.cluster.KMeans':
-        {
-            'n_clusters': [2, 4, 6, 8, 16]
-        }
-}
-
-results = DataFrame.from_dict(clf.cv_results_)
-results.head()
+# TODO fix this. ¿Maybe refit is needed here before getting results? 
+# results = DataFrame.from_dict(best_estimator.cv_results_)
+# results.head()
 
 # Task 6: Dump your classifier, dataset, and features_list so anyone can check
 # your results. You do not need to change anything below, but make sure that
 # the version of poi_id.py that you submit can be run on its own and generates
 # the necessary .pkl files for validating your results.
 
-dump_classifier_and_data(clf, my_dataset, features_list)
+dump_classifier_and_data(best_estimator, enron_data, enron_feature_list)
