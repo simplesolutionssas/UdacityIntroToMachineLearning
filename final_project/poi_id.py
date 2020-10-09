@@ -275,7 +275,35 @@ def get_best_estimator_metrics(results, metrics):
     return estimator_metrics
 
 
-def plot_estimator_metrics(estimator, results):
+def add_best_metric_value_marker(results, axe, x_values, metric, color):
+    '''
+    For a metric, plot a dotted vertical line marked with an x at the best
+    score obtained, and annotate it with the value for that score.
+
+    Args:
+        results : DataFrame
+            DataFrame with the results of the grid search.
+        axe : Axes
+            Axe where we'll plot the dotted vertical line.
+        x_values : ndarray
+            Array with the values used for the chart's X axis.
+        metric : string
+            The name of the metric whose best value we want to mark.
+        color : string
+            The code of the color we want to mark the best value with.
+
+    Returns:
+        None
+    '''
+    best_index = np.nonzero(results['rank_test_%s' % metric] == 1)[0][0]
+    best_score = results['mean_test_%s' % metric][best_index]
+    axe.plot([x_values[best_index], ] * 2, [0, best_score], linestyle='-.',
+             color=color, marker='x', markeredgewidth=3, ms=8)
+    axe.annotate('%0.2f' % best_score,
+                 (x_values[best_index], best_score + 0.005))
+
+
+def plot_estimator_metrics(estimator, metrics, results):
     '''
     Generate a graphic graphic comparing the results obtained for each one of
     the different candidates, for each one of the different scoring metrics
@@ -290,43 +318,40 @@ def plot_estimator_metrics(estimator, results):
     Returns:
         None
     '''
-    plt.title(estimator + " Results", fontsize=16)
-    plt.xlabel("reduce_dim__n_components")
-    plt.ylabel("Score")
-    ax = plt.gca()
-    ax.set_xlim(0, 16)
-    ax.set_ylim(0.0, 1)
+    # TODO explore with a pivot table in pandas that gets the average metric
+    # score (for all metrics evaluated) for each value of a parameter. This
+    # could be then plotted to see the impact of the specific parameter on
+    # the results. Iterating over the different parameters we would end up
+    # with a group of charts (one per parameter) to detect those parameters
+    # most important for solving the particular problem.
 
     # TODO: generalize this code to accept more than 16 experiments.
-    # Get the regular numpy array from the MaskedArray
-    X_axis = np.array(results['param_reduce_dim__n_components'].data,
-                      dtype=float)
 
-    for scorer, color in zip(sorted(metrics), ['g', 'k', 'b', 'r']):
+    main_metric_name = 'mean_test_' + metrics[0]
+    data_points = len(results[main_metric_name])
+    x_values = np.arange(data_points)
+    plt.figure(figsize=(20, 10))
+    plt.title('Results for ' + estimator, fontsize=16)
+    plt.xlabel('Candidates')
+    plt.ylabel('Score')
+    axe = plt.gca()
+    axe.set_xlim(0, data_points - 1)
+    axe.set_ylim(0.0, 1.0)
+
+    for metric, color in zip(sorted(metrics), ['g', 'k', 'b', 'r']):
         for sample, style in (('train', '--'), ('test', '-')):
-            sample_score_mean = results['mean_%s_%s' % (sample, scorer)]
-            sample_score_std = results['std_%s_%s' % (sample, scorer)]
-            ax.fill_between(X_axis, sample_score_mean - sample_score_std,
-                            sample_score_mean + sample_score_std,
-                            alpha=0.1 if sample == 'test' else 0, color=color)
-            ax.plot(X_axis, sample_score_mean, style, color=color,
-                    alpha=1 if sample == 'test' else 0.7,
-                    label="%s (%s)" % (scorer, sample))
+            sample_score_mean = results['mean_%s_%s' % (sample, metric)]
+            sample_score_std = results['std_%s_%s' % (sample, metric)]
+            axe.fill_between(x_values, sample_score_mean - sample_score_std,
+                             sample_score_mean + sample_score_std,
+                             alpha=0.1 if sample == 'test' else 0, color=color)
+            axe.plot(x_values, sample_score_mean, style, color=color,
+                     alpha=1 if sample == 'test' else 0.7,
+                     label='%s (%s)' % (metric, sample))
 
-        best_index = np.nonzero(results['rank_test_%s' % scorer] == 1)[0][0]
-        best_score = results['mean_test_%s' % scorer][best_index]
+        add_best_metric_value_marker(results, axe, x_values, metric, color)
 
-        # For each scorer, plot a dotted vertical line marked by x,
-        # at the best score obtained
-        ax.plot([X_axis[best_index], ] * 2, [0, best_score],
-                linestyle='-.', color=color, marker='x', markeredgewidth=3,
-                ms=8)
-
-        # Annotate the best score for that scorer
-        ax.annotate("%0.2f" % best_score,
-                    (X_axis[best_index], best_score + 0.005))
-
-    plt.legend(loc="best")
+    plt.legend(loc='best')
     plt.grid(False)
     plt.show()
 
@@ -367,7 +392,7 @@ def get_best_estimator(pipelines, cv_strategy, metrics):
         results = clf.cv_results_
         print('\nBest {} Found:\n{}\n'.format(estimator, clf.best_estimator_))
         best_estimator_metrics = get_best_estimator_metrics(results, metrics)
-        plot_estimator_metrics(estimator, results)
+        plot_estimator_metrics(estimator, metrics, results)
         if best_estimator_metrics[0] > best_main_metric_value:
             best_estimator = clf.best_estimator_
             best_main_metric_value = best_estimator_metrics[0]
