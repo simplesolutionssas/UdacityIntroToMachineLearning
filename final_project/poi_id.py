@@ -378,6 +378,7 @@ def get_best_estimator(pipelines, cv_strategy, metrics):
     print('Performing Model Optimizations...')
     best_main_metric_value = 0.0
     best_estimator = ''
+    results = ''
     for estimator, pipeline_definition in pipelines.items():
         print('\nAnalyzing {}...'.format(estimator))
         pipeline = Pipeline(pipeline_definition['pipe'])
@@ -394,7 +395,7 @@ def get_best_estimator(pipelines, cv_strategy, metrics):
             best_estimator = clf.best_estimator_
             best_main_metric_value = best_estimator_metrics[0]
 
-    return best_estimator
+    return results, best_estimator
 
 
 def plot_features(dataframe):
@@ -423,7 +424,7 @@ cv_strategy = StratifiedShuffleSplit(n_splits=10, random_state=42)
 # the list, because get_best_estimator assumes the one in that position to be
 # the main metric to evaluate the select estimator.
 metrics = ['recall', 'accuracy', 'precision', 'f1']
-best_estimator = get_best_estimator(pipelines, cv_strategy, metrics)
+results, best_estimator = get_best_estimator(pipelines, cv_strategy, metrics)
 print('\nBest Overall Estimator Found:\n{}\n'.format(best_estimator))
 
 # Task 4: Try a variety of classifiers
