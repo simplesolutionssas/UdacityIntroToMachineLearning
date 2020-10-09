@@ -2,23 +2,20 @@
 
 import sys
 import numpy as np
-from numpy import core
-import pandas as pd
 import pickle
-from matplotlib import pyplot as plt
+import pandas as pd
 from pandas import DataFrame
-from sklearn.metrics.classification import f1_score, precision_score
-from sklearn.metrics.classification import recall_score
+from matplotlib import pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.decomposition import PCA
 from sklearn.naive_bayes import GaussianNB
-from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.svm import SVC
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV
-from sklearn.model_selection import train_test_split, StratifiedShuffleSplit
+from sklearn.model_selection import StratifiedShuffleSplit
 from tester import dump_classifier_and_data
-sys.path.append("../tools/")
+sys.path.append('../tools/')
 from feature_format import featureFormat, targetFeatureSplit
 
 
@@ -66,7 +63,7 @@ def get_enron_feature_list():
             The list of features that will be used for solving the POI
             classification problem.
     '''
-    # The first feature must be "poi".
+    # The first feature must be 'poi'.
     features_list = ['poi', 'salary', 'deferral_payments', 'total_payments',
                      'loan_advances', 'bonus', 'restricted_stock_deferred',
                      'deferred_income', 'total_stock_value', 'expenses',
