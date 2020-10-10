@@ -401,12 +401,16 @@ def plot_estimator_metrics(estimator, metrics, results):
     plt.show()
 
 
-def get_best_estimator(pipelines, cv_strategy, metrics):
+def get_best_estimator(features, labels, pipelines, cv_strategy, metrics):
     '''
     Get the best estimator from the pipelines, cross validation, metrics and
     refit metrics specified for the search strategy.
 
     Args:
+        features : ndarray
+            Array with the features for each data point in the enron dataset.
+        labels : ndarray
+            Array with the labels for each data point in the enron dataset.
         pipelines : dictionary
             Dictionary with specification of the different pipelines we want to
             use to try and solve this particular problem.
@@ -472,7 +476,8 @@ cv_strategy = StratifiedShuffleSplit(n_splits=10, random_state=42)
 # the list, because get_best_estimator assumes the one in that position to be
 # the main metric to evaluate the select estimator.
 metrics = ['recall', 'accuracy', 'precision', 'f1']
-results, best_estimator = get_best_estimator(pipelines, cv_strategy, metrics)
+results, best_estimator = get_best_estimator(features, labels, pipelines,
+                                             cv_strategy, metrics)
 print('\nBest Overall Estimator Found:\n{}\n'.format(best_estimator))
 
 # Task 4: Try a variety of classifiers
