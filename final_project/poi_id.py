@@ -438,7 +438,8 @@ def get_best_estimator(features, labels, pipelines, cv_strategy, metrics):
         param_grid = pipeline_definition['param_grid']
         clf = GridSearchCV(pipeline, param_grid=param_grid, cv=cv_strategy,
                            scoring=metrics, refit=metrics[0], n_jobs=8,
-                           iid=False, verbose=2, return_train_score=True,)
+                           iid=False, verbose=True, return_train_score=True,
+                           error_score='raise')
         clf.fit(features, labels)
         results = clf.cv_results_
         print('\nBest {} Found:\n{}\n'.format(estimator, clf.best_estimator_))
