@@ -524,6 +524,7 @@ metrics = ['recall', 'accuracy', 'precision', 'f1']
 results, best_estimator = get_best_estimator(features, labels, pipelines,
                                              cv_strategy, metrics)
 print('\nBest Overall Estimator Found:\n{}\n'.format(best_estimator))
+get_best_estimator_metrics(results, metrics)
 
 enron_df = plot_features(enron_data)
 enron_df.head()
