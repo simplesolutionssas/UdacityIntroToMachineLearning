@@ -451,6 +451,34 @@ def get_best_estimator(features, labels, pipelines, cv_strategy, metrics):
 
 
 def plot_features(dataframe):
+def get_clean_enron_dataframe(enron_data):
+    '''
+    Transforms the enron_data dictionary to a DataFrame.
+
+    Args:
+        enron_data : dictionary
+            Dictionary containing the data stored in the file, in a structured
+            format.
+
+    Returns:
+        enron_df : DataFrame
+            DataFrame containing the data stored in the file, in a structured
+            pandas format.
+    '''
+    # Put the dictionary in a DataFrame and perform some cleaning operations.
+    pd.options.display.float_format = '{:20,.2f}'.format
+    enron_data.pop('TOTAL', 0)
+    enron_df = DataFrame.from_dict(enron_data, orient='index')
+    # All NaN strings are converted to Numpy nan values, which allows the
+    # describe function to produce proper numeric values for all statistics.
+    enron_df.replace('NaN', 0.0, regex=True, inplace=True)
+    # Convert True to 1 and False to 0.
+    enron_df.replace({True: 1, False: 0}, inplace=True)
+    enron_df.drop('email_address', axis=1, inplace=True)
+
+    return enron_df
+
+
     '''
     Generate a graphic for each one of the features in a dataframe, in order to
     visualize and help detect easily any outliers present on the data.
@@ -492,20 +520,6 @@ print('\nBest Overall Estimator Found:\n{}\n'.format(best_estimator))
 # function. Because of the small size of the dataset, the script uses
 # stratified shuffle split cross validation. For more info:
 # http://scikit-learn.org/stable/modules/generated/sklearn.cross_validation.StratifiedShuffleSplit.html
-
-
-# # Put the dictionary in a DataFrame and perform some cleaning operations.
-# pd.options.display.float_format = '{:20,.2f}'.format
-# enron_df = DataFrame.from_dict(enron_data, orient='index')
-# # All NaN strings are converted to Numpy nan values, which allows the describe.
-# # function to produce proper numeric values for all statistics.
-# enron_df.replace('NaN', np.nan, regex=True, inplace=True)
-# # Convert True to 1 and False to 0.
-# enron_df.replace({True: 1, False: 0}, inplace=True)
-# enron_df.drop('email_address', axis=1, inplace=True)
-# # plot_features(enron_df)
-# enron_df.head()
-# enron_df.describe()
 
 # TODO fix this. ¿Maybe refit is needed here before getting results? 
 # results = DataFrame.from_dict(best_estimator.cv_results_)
