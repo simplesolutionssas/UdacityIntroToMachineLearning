@@ -11,6 +11,9 @@ from sklearn.decomposition import PCA
 from sklearn.naive_bayes import GaussianNB
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
+from sklearn.cluster import KMeans
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import StratifiedShuffleSplit
@@ -170,45 +173,7 @@ def get_pipelines():
     # 2. reduce_dim
     # 3. stratified_shuffle_split
     # 4. classify
-    # scaler = MinMaxScaler()
-    # pca = PCA()
-    # pipelines = {
-    #     'sklearn.svm.SVC':
-    #         {
-    #             'kernel': ['linear', 'rbf', 'sigmoid', 'poly'],
-    #             'gamma': ['auto', 'scale'],
-    #             'C': [10, 100, 1000, 10000],
-    #             'degree': [2, 3, 4, 5]
-    #         },
-    #     'sklearn.neighbors.KNeighborsClassifier':
-    #         {
-    #             'n_neighbors': [2, 4, 8, 16, 32, 64],
-    #             'weights': ['uniform', 'distance'],
-    #             'algorithm': ['ball_tree', 'kd_tree', 'brute'],
-    #             'p': [1, 2]
-    #         },
-    #     'sklearn.ensemble.RandomForestClassifier':
-    #         {
-    #             'n_estimators': [8, 16, 32, 64],
-    #             'criterion': ['entropy', 'gini'],
-    #             'min_samples_split': [2, 4, 8, 16, 32, 64],
-    #             'max_depth': [2, 4, 8, 16],
-    #             'max_features': [None, 'sqrt', 'log2']
-    #         },
-    #     'sklearn.ensemble.AdaBoostClassifier':
-    #         {
-    #             'base_estimator': [None,
-    #                                SVC(kernel='poly', gamma='scale', degree=5),
-    #                                DecisionTreeClassifier(splitter='random')],
-    #             'n_estimators': [8, 16, 32, 64, 128],
-    #             'algorithm': ['SAMME'],
-    #             'learning_rate': [0.01, 0.05, 0.1, 0.3, 1]
-    #         },
-    #     'sklearn.cluster.KMeans':
-    #         {
-    #             'n_clusters': [2, 4, 6, 8, 16]
-    #         }
-    # }
+
     pipelines = {
         'GaussianNB': {
             'pipe': [('reduce_dim', PCA()),
@@ -228,8 +193,91 @@ def get_pipelines():
                 'classify__splitter': ['best', 'random'],
                 'classify__min_samples_split': [2, 4, 8, 16, 32, 64]
             }]
+        },
+        'SVC': {
+            'pipe': [('reduce_dim', PCA()),
+                     ('classify', SVC(random_state=42))],
+            'param_grid': [{
+                # I wasn't able to make SVC work with the 'linear' kernel.
+                # 'reduce_dim': [PCA()],
+                # 'reduce_dim__n_components': [2, 4, 8, 16],
+                # 'classify__kernel': ['linear'],
+                # 'classify__C': [10, 100, 1000, 10000]
+            # }, {
+                'reduce_dim': [PCA()],
+                'reduce_dim__n_components': [2, 4, 8, 16],
+                'classify__kernel': ['rbf'],
+                'classify__gamma': ['auto', 'scale'],
+                'classify__C': [10, 100, 1000, 10000],
+            }, {
+                'reduce_dim': [PCA()],
+                'reduce_dim__n_components': [2, 4, 8, 16],
+                'classify__kernel': ['sigmoid'],
+                'classify__gamma': ['auto', 'scale'],
+                'classify__C': [10, 100, 1000, 10000]
+            }, {
+                'reduce_dim': [PCA()],
+                # With values greater than, 6 (8, 16) the search won't finish.
+                'reduce_dim__n_components': [2, 4, 6],
+                'classify__kernel': ['poly'],
+                'classify__gamma': ['auto', 'scale'],
+                'classify__C': [10, 100, 1000, 10000],
+                # With a value of 2 the search won't finish.
+                'classify__degree': [3, 4, 5]
+            }]
+        },
+        'KNeighborsClassifier': {
+            'pipe': [('reduce_dim', PCA()),
+                     ('classify', KNeighborsClassifier())],
+            'param_grid': [{
+                'reduce_dim': [PCA()],
+                'reduce_dim__n_components': [2, 4, 8, 16],
+                'classify__n_neighbors': [2, 4, 8, 16, 32, 64],
+                'classify__weights': ['uniform', 'distance'],
+                'classify__algorithm': ['ball_tree', 'kd_tree', 'brute'],
+                'classify__p': [1, 2]
+            }]
+        },
+        'RandomForestClassifier': {
+            'pipe': [('reduce_dim', PCA()),
+                     ('classify', RandomForestClassifier(random_state=42))],
+            'param_grid': [{
+                'reduce_dim': [PCA()],
+                'reduce_dim__n_components': [2, 4, 8, 16],
+                'classify__n_estimators': [8, 16, 32, 64],
+                'classify__criterion': ['entropy', 'gini'],
+                'classify__min_samples_split': [2, 4, 8, 16, 32, 64],
+                'classify__max_depth': [2, 4, 8, 16],
+                'classify__max_features': [None, 'sqrt', 'log2']
+            }]
+        },
+        'AdaBoostClassifier': {
+            'pipe': [('reduce_dim', PCA()),
+                     ('classify', AdaBoostClassifier(random_state=42))],
+            'param_grid': [{
+                'reduce_dim': [PCA()],
+                'reduce_dim__n_components': [2, 4, 8, 16],
+                'classify__base_estimator': [
+                    None,
+                    SVC(kernel='poly', gamma='scale', degree=5),
+                    DecisionTreeClassifier(splitter='random')
+                ],
+                'classify__n_estimators': [8, 16, 32, 64, 128],
+                'classify__algorithm': ['SAMME'],
+                'classify__learning_rate': [0.01, 0.05, 0.1, 0.3, 1]
+            }],
+        },
+        'KMeans': {
+            'pipe': [('reduce_dim', PCA()),
+                     ('classify', KMeans(random_state=42))],
+            'param_grid': [{
+                'reduce_dim': [PCA()],
+                'reduce_dim__n_components': [2, 4, 8, 16],
+                'classify__n_clusters': [2]
+            }]
         }
     }
+
     return pipelines
 
 
