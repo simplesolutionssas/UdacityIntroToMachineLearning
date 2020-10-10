@@ -428,7 +428,7 @@ def get_best_estimator(features, labels, pipelines, cv_strategy, metrics):
             This is the best estimator that was found during the search.
     '''
     print('Performing Model Optimizations...')
-    best_main_metric_value = 0.0
+    best_main_metric_value = -1.0
     best_estimator = ''
     results = ''
     for estimator, pipeline_definition in pipelines.items():
