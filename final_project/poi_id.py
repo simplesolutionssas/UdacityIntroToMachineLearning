@@ -4,6 +4,7 @@ import sys
 import numpy as np
 import pickle
 import pandas as pd
+import seaborn as sns
 from pandas import DataFrame
 from matplotlib import pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
@@ -450,7 +451,6 @@ def get_best_estimator(features, labels, pipelines, cv_strategy, metrics):
     return results, best_estimator
 
 
-def plot_features(dataframe):
 def get_clean_enron_dataframe(enron_data):
     '''
     Transforms the enron_data dictionary to a DataFrame.
@@ -479,13 +479,29 @@ def get_clean_enron_dataframe(enron_data):
     return enron_df
 
 
+def plot_features(enron_data):
     '''
     Generate a graphic for each one of the features in a dataframe, in order to
     visualize and help detect easily any outliers present on the data.
+
+    Args:
+        enron_data : dictionary
+            Dictionary containing the data stored in the file, in a structured
+            format.
+
+    Returns:
+        enron_df : DataFrame
+            This is a secondary behavior, but taking advantage of the call to
+            get_clean_enron_dataframe which is required to clean the data
+            before plotting it, we return the clean dataframe as a convenience.
+            The result is a DataFrame containing the data stored in the file,
+            in a structured pandas format.
     '''
     # Plot the variables to understand them better.
-    for col in dataframe.columns:
-        dataframe.hist(column=col, bins=100, alpha=0.5)
+    enron_df = get_clean_enron_dataframe(enron_data)
+    sns.pairplot(enron_df, hue='poi')
+
+    return enron_df
 
 
 enron_data = load_data('final_project_dataset.pkl')
@@ -507,6 +523,10 @@ metrics = ['recall', 'accuracy', 'precision', 'f1']
 results, best_estimator = get_best_estimator(features, labels, pipelines,
                                              cv_strategy, metrics)
 print('\nBest Overall Estimator Found:\n{}\n'.format(best_estimator))
+
+enron_df = plot_features(enron_data)
+enron_df.head()
+enron_df.describe()
 
 # Task 4: Try a variety of classifiers
 # Please name your classifier clf for easy export below.
