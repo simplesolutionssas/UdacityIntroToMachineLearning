@@ -520,7 +520,7 @@ cv_strategy = StratifiedShuffleSplit(n_splits=10, random_state=42)
 # don't want to risk missing ani pois. Recall needs to be the first metric on
 # the list, because get_best_estimator assumes the one in that position to be
 # the main metric to evaluate the select estimator.
-metrics = ['recall', 'accuracy', 'precision', 'f1']
+metrics = ['accuracy', 'recall', 'precision', 'f1']
 results, best_estimator = get_best_estimator(features, labels, pipelines,
                                              cv_strategy, metrics)
 print('\nBest Overall Estimator Found:\n{}\n'.format(best_estimator))
