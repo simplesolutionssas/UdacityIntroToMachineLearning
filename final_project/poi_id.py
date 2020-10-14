@@ -16,6 +16,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.cluster import KMeans
 from sklearn.pipeline import Pipeline
+from backports import tempfile
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import StratifiedShuffleSplit
 from tester import dump_classifier_and_data
@@ -155,9 +156,9 @@ def add_enron_features(labels, features):
     return labels, features
 
 
-def get_pipelines():
+def get_pipelines_definitions():
     '''
-    Build the different pipelines that will be used to train and finetune the
+    Define the different pipelines that will be used to train and finetune the
     classification model.
 
     Args:
@@ -169,95 +170,72 @@ def get_pipelines():
             the model in order to select the one that produces the best results
             for the given problem.
     '''
-    # Pipeline:
-    # 1. scale
-    # 2. reduce_dim
-    # 3. stratified_shuffle_split
-    # 4. classify
-
+    scale_variations = [None, RobustScaler(), MinMaxScaler(), Normalizer()]
+    reduce_dim_variations = [None, PCA(2), PCA(4), PCA(8), PCA(16)]
     pipelines = {
-        'GaussianNB': {
-            'pipe': [('reduce_dim', PCA()),
-                     ('classify', GaussianNB())],
-            'param_grid': [{
-                'reduce_dim': [PCA()],
-                'reduce_dim__n_components': [2, 4, 8, 16],
-            }]
-        },
-        'DecisionTreeClassifier': {
-            'pipe': [('reduce_dim', PCA()),
-                     ('classify', DecisionTreeClassifier(random_state=42))],
-            'param_grid': [{
-                'reduce_dim': [PCA()],
-                'reduce_dim__n_components': [2, 4, 8, 16],
-                'classify__criterion': ['entropy', 'gini'],
-                'classify__splitter': ['best', 'random'],
-                'classify__min_samples_split': [2, 4, 8, 16, 32, 64]
-            }]
-        },
-        'SVC': {
-            'pipe': [('reduce_dim', PCA()),
-                     ('classify', SVC(random_state=42))],
-            'param_grid': [{
-                # I wasn't able to make SVC work with the 'linear' kernel.
-                # 'reduce_dim': [PCA()],
-                # 'reduce_dim__n_components': [2, 4, 8, 16],
-                # 'classify__kernel': ['linear'],
-                # 'classify__C': [10, 100, 1000, 10000]
-            # }, {
-                'reduce_dim': [PCA()],
-                'reduce_dim__n_components': [2, 4, 8, 16],
-                'classify__kernel': ['rbf'],
-                'classify__gamma': ['auto', 'scale'],
-                'classify__C': [10, 100, 1000, 10000],
+        'GaussianNB': [{
+            'classify': [GaussianNB()],
+            'scale': scale_variations,
+            'reduce_dim': reduce_dim_variations
+        }],
+        'DecisionTreeClassifier': [{
+            'classify': [DecisionTreeClassifier(random_state=42)],
+            'scale': scale_variations,
+            'reduce_dim': reduce_dim_variations,
+            'classify__criterion': ['entropy', 'gini'],
+            'classify__splitter': ['best', 'random'],
+            'classify__min_samples_split': [2, 4, 8, 16, 32, 64]
+        }],
+        # I wasn't able to make SVC work with the 'linear' kernel.
+        'SVC': [{
+            'classify': [SVC(random_state=42)],
+            'scale': scale_variations,
+            'reduce_dim': reduce_dim_variations,
+            'classify__kernel': ['rbf'],
+            'classify__gamma': ['auto', 'scale'],
+            'classify__C': [10, 100, 1000, 10000],
             }, {
-                'reduce_dim': [PCA()],
-                'reduce_dim__n_components': [2, 4, 8, 16],
-                'classify__kernel': ['sigmoid'],
-                'classify__gamma': ['auto', 'scale'],
-                'classify__C': [10, 100, 1000, 10000]
+            'classify': [SVC(random_state=42)],
+            'scale': scale_variations,
+            'reduce_dim': reduce_dim_variations,
+            'classify__kernel': ['sigmoid'],
+            'classify__gamma': ['auto', 'scale'],
+            'classify__C': [10, 100, 1000, 10000]
             }, {
-                'reduce_dim': [PCA()],
-                # With values greater than, 6 (8, 16) the search won't finish.
-                'reduce_dim__n_components': [2, 4, 6],
-                'classify__kernel': ['poly'],
-                'classify__gamma': ['auto', 'scale'],
-                'classify__C': [10, 100, 1000, 10000],
-                # With a value of 2 the search won't finish.
-                'classify__degree': [3, 4, 5]
-            }]
-        },
-        'KNeighborsClassifier': {
-            'pipe': [('reduce_dim', PCA()),
-                     ('classify', KNeighborsClassifier())],
-            'param_grid': [{
-                'reduce_dim': [PCA()],
-                'reduce_dim__n_components': [2, 4, 8, 16],
-                'classify__n_neighbors': [2, 4, 8, 16, 32, 64],
-                'classify__weights': ['uniform', 'distance'],
-                'classify__algorithm': ['ball_tree', 'kd_tree', 'brute'],
-                'classify__p': [1, 2]
-            }]
-        },
-        'RandomForestClassifier': {
-            'pipe': [('reduce_dim', PCA()),
-                     ('classify', RandomForestClassifier(random_state=42))],
-            'param_grid': [{
-                'reduce_dim': [PCA()],
-                'reduce_dim__n_components': [2, 4, 8, 16],
-                'classify__n_estimators': [8, 16, 32, 64],
-                'classify__criterion': ['entropy', 'gini'],
-                'classify__min_samples_split': [2, 4, 8, 16, 32, 64],
-                'classify__max_depth': [2, 4, 8, 16],
-                'classify__max_features': [None, 'sqrt', 'log2']
-            }]
-        },
-        'AdaBoostClassifier': {
-            'pipe': [('reduce_dim', PCA()),
-                     ('classify', AdaBoostClassifier(random_state=42))],
-            'param_grid': [{
-                'reduce_dim': [PCA()],
-                'reduce_dim__n_components': [2, 4, 8, 16],
+            'classify': [SVC(random_state=42)],
+            # With other scalers the search won't finish.
+            'scale': [None, MinMaxScaler()],
+            # With values over 6 (8, 16, None) the search won't finish.
+            'reduce_dim': [PCA(2), PCA(4), PCA(6)],
+            'classify__kernel': ['poly'],
+            'classify__gamma': ['auto', 'scale'],
+            'classify__C': [10, 100, 1000, 10000],
+            # With a value of 2 the search won't finish.
+            'classify__degree': [3, 4, 5]
+        }],
+        'KNeighborsClassifier': [{
+            'classify': [KNeighborsClassifier()],
+            'scale': scale_variations,
+            'reduce_dim': reduce_dim_variations,
+            'classify__n_neighbors': [2, 4, 8, 16, 32, 64],
+            'classify__weights': ['uniform', 'distance'],
+            'classify__algorithm': ['ball_tree', 'kd_tree', 'brute'],
+            'classify__p': [1, 2]
+        }],
+        'RandomForestClassifier': [{
+            'classify': [RandomForestClassifier(random_state=42)],
+            'scale': scale_variations,
+            'reduce_dim': reduce_dim_variations,
+            'classify__n_estimators': [8, 16, 32, 64],
+            'classify__criterion': ['entropy', 'gini'],
+            'classify__min_samples_split': [2, 4, 8, 16, 32, 64],
+            'classify__max_depth': [2, 4, 8, 16],
+            'classify__max_features': [None, 'sqrt', 'log2']
+        }],
+        'AdaBoostClassifier': [{
+                'classify': [AdaBoostClassifier(random_state=42)],
+                'scale': scale_variations,
+                'reduce_dim': reduce_dim_variations,
                 'classify__base_estimator': [
                     None,
                     SVC(kernel='poly', gamma='scale', degree=5),
@@ -266,20 +244,44 @@ def get_pipelines():
                 'classify__n_estimators': [8, 16, 32, 64, 128],
                 'classify__algorithm': ['SAMME'],
                 'classify__learning_rate': [0.01, 0.05, 0.1, 0.3, 1]
-            }],
-        },
-        'KMeans': {
-            'pipe': [('reduce_dim', PCA()),
-                     ('classify', KMeans(random_state=42))],
-            'param_grid': [{
-                'reduce_dim': [PCA()],
-                'reduce_dim__n_components': [2, 4, 8, 16],
+        }],
+        'KMeans': [{
+                'classify': [KMeans(random_state=42)],
+                'scale': scale_variations,
+                'reduce_dim': reduce_dim_variations,
                 'classify__n_clusters': [2]
-            }]
-        }
+        }]
     }
 
     return pipelines
+
+
+def get_dummy_pipeline_with_memory():
+    '''
+    Return a pipeline to be used in a search strategy (e.g. GridSearchCV,
+    RandomSearchCV, etc.), with the correct steps in the right sequence, but
+    initialized with arbitrary estimators (because the specific estimators
+    to use in the search will be defined by means of the param_grid).
+
+    The returned pipeline uses memory to improve search performance. 
+
+    Args:
+        None
+
+    Returns:
+        pipeline : Pipeline
+            A Pipeline object with the desired steps in the proper sequence,
+            but initialized with arbitrary estimators, and with memory usage
+            enabled.
+    '''
+    with tempfile.TemporaryDirectory(prefix='poi_id_') as tmpdir:
+        # The steps used are just for initializing the pipeline. The actual
+        # steps are defined inside the param_grid.
+        pipeline = Pipeline(steps=[('scale', RobustScaler()),
+                                   ('reduce_dim', PCA()),
+                                   ('classify', GaussianNB())],
+                            memory=tmpdir)
+    return pipeline
 
 
 def get_best_estimator_metrics(results, metrics):
@@ -432,14 +434,13 @@ def get_best_estimator(features, labels, pipelines, cv_strategy, metrics):
     best_main_metric_value = -1.0
     best_estimator = ''
     results = ''
+    pipeline = get_dummy_pipeline_with_memory()
     for estimator, pipeline_definition in pipelines.items():
         print('\nAnalyzing {}...'.format(estimator))
-        pipeline = Pipeline(pipeline_definition['pipe'])
-        param_grid = pipeline_definition['param_grid']
-        clf = GridSearchCV(pipeline, param_grid=param_grid, cv=cv_strategy,
-                           scoring=metrics, refit=metrics[0], n_jobs=8,
+        clf = GridSearchCV(pipeline, param_grid=pipeline_definition,
+                           scoring=metrics, refit=metrics[0], cv=cv_strategy,
                            iid=False, verbose=True, return_train_score=True,
-                           error_score='raise')
+                           n_jobs=8, error_score='raise')
         clf.fit(features, labels)
         results = clf.cv_results_
         print('\nBest {} Found:\n{}\n'.format(estimator, clf.best_estimator_))
@@ -510,7 +511,7 @@ enron_feature_list = get_enron_feature_list()
 labels, features = get_enron_labels_features(enron_data, enron_feature_list)
 labels, features = remove_enron_outliers(labels, features)
 labels, features = add_enron_features(labels, features)
-pipelines = get_pipelines()
+pipelines = get_pipelines_definitions()
 # For cross-validation we'll use a stratified shuffle split because of the
 # small size of the dataset.
 cv_strategy = StratifiedShuffleSplit(n_splits=10, random_state=42)
