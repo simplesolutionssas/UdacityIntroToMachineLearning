@@ -7,7 +7,7 @@ import pandas as pd
 import seaborn as sns
 from pandas import DataFrame
 from matplotlib import pyplot as plt
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import RobustScaler, MinMaxScaler, Normalizer
 from sklearn.decomposition import PCA
 from sklearn.naive_bayes import GaussianNB
 from sklearn.tree import DecisionTreeClassifier
