@@ -193,14 +193,14 @@ def get_pipelines_definitions():
             'reduce_dim': reduce_dim_variations,
             'classify__kernel': ['rbf'],
             'classify__gamma': ['auto', 'scale'],
-            'classify__C': [10, 100, 1000, 10000],
+            'classify__C': [10, 100, 1000],
             }, {
             'classify': [SVC(random_state=42)],
             'scale': scale_variations,
             'reduce_dim': reduce_dim_variations,
             'classify__kernel': ['sigmoid'],
             'classify__gamma': ['auto', 'scale'],
-            'classify__C': [10, 100, 1000, 10000]
+            'classify__C': [10, 100, 1000]
             }, {
             'classify': [SVC(random_state=42)],
             # With other scalers the search won't finish.
@@ -209,7 +209,7 @@ def get_pipelines_definitions():
             'reduce_dim': [PCA(2), PCA(4), PCA(6)],
             'classify__kernel': ['poly'],
             'classify__gamma': ['auto', 'scale'],
-            'classify__C': [10, 100, 1000, 10000],
+            'classify__C': [10, 100, 1000],
             # With a value of 2 the search won't finish.
             'classify__degree': [3, 4, 5]
         }],
@@ -217,7 +217,7 @@ def get_pipelines_definitions():
             'classify': [KNeighborsClassifier()],
             'scale': scale_variations,
             'reduce_dim': reduce_dim_variations,
-            'classify__n_neighbors': [2, 4, 8, 16, 32, 64],
+            'classify__n_neighbors': [2, 4, 8, 16, 32],
             'classify__weights': ['uniform', 'distance'],
             'classify__algorithm': ['ball_tree', 'kd_tree', 'brute'],
             'classify__p': [1, 2]
@@ -226,10 +226,10 @@ def get_pipelines_definitions():
             'classify': [RandomForestClassifier(random_state=42)],
             'scale': scale_variations,
             'reduce_dim': reduce_dim_variations,
-            'classify__n_estimators': [8, 16, 32, 64],
+            'classify__n_estimators': [4, 8, 16],
             'classify__criterion': ['entropy', 'gini'],
-            'classify__min_samples_split': [2, 4, 8, 16, 32, 64],
-            'classify__max_depth': [2, 4, 8, 16],
+            'classify__min_samples_split': [4, 8, 16],
+            'classify__max_depth': [4, 8, 16],
             'classify__max_features': [None, 'sqrt', 'log2']
         }],
         'AdaBoostClassifier': [{
@@ -241,9 +241,9 @@ def get_pipelines_definitions():
                     SVC(kernel='poly', gamma='scale', degree=5),
                     DecisionTreeClassifier(splitter='random')
                 ],
-                'classify__n_estimators': [8, 16, 32, 64, 128],
+                'classify__n_estimators': [32, 64, 128],
                 'classify__algorithm': ['SAMME'],
-                'classify__learning_rate': [0.01, 0.05, 0.1, 0.3, 1]
+                'classify__learning_rate': [0.05, 0.1, 0.3, 1]
         }],
         'KMeans': [{
                 'classify': [KMeans(random_state=42)],
