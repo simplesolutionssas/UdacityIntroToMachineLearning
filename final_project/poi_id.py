@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import sys
+from time import time
 import numpy as np
 import pickle
 import pandas as pd
@@ -44,6 +45,65 @@ def load_data(file_path):
     return dataset
 
 
+def get_clean_enron_dataframe(enron_data):
+    '''
+    Transforms the enron_data dictionary to a DataFrame.
+
+    Args:
+        enron_data : dictionary
+            Dictionary containing the data stored in the file, in a structured
+            format.
+
+    Returns:
+        enron_df : DataFrame
+            DataFrame containing the data stored in the file, in a structured
+            pandas format.
+    '''
+    # Put the dictionary in a DataFrame and perform some cleaning operations.
+    pd.options.display.float_format = '{:20,.2f}'.format
+    enron_data.pop('TOTAL', 0)
+    enron_df = DataFrame.from_dict(enron_data, orient='index')
+    # All NaN strings are converted to Numpy nan values, which allows the
+    # describe function to produce proper numeric values for all statistics.
+    enron_df.replace('NaN', 0.0, regex=True, inplace=True)
+    # Convert True to 1 and False to 0.
+    enron_df.replace({True: 1, False: 0}, inplace=True)
+    enron_df.drop('email_address', axis=1, inplace=True)
+
+    return enron_df
+
+
+def describe_dataset(data_frame, label_column):
+    '''
+    Generate a series of statistics for each one of the features found in the
+    dataframe in order to understand better the data.
+
+    Args:
+        data_frame : DataFrame
+            DataFrame containing the data stored in the file, in a structured
+            format.
+        label_column : string
+            The name of the column containing the labels for each data point in
+            the DataFrame.
+    data_frame.head(10)
+    data_frame.describe()
+    data_frame[label_column].value_counts()
+    data_frame[label_column].astype(int).plot.hist()
+
+
+def plot_features(data_frame):
+    '''
+    Generate a graphic for each one of the features in a dataframe, in order to
+    visualize and help detect easily any outliers present on the data.
+
+    Args:
+        data_frame : DataFrame
+            DataFrame containing the data stored in the file, in a structured
+            format.
+    '''
+    sns.pairplot(data_frame, hue='poi')
+
+
 def get_enron_feature_list():
     '''
     Retrieve the feature list to be used for the Enron POI classification
@@ -79,6 +139,24 @@ def get_enron_feature_list():
     return features_list
 
 
+def get_best_enron_features(full_features_list):
+    '''
+    Select the best features to use for the Enron POI classification problem:
+
+    Args:
+        full_features_list : list
+            The full list of features that can be used for solving the POI
+            classification problem.
+
+    Returns:
+        best_features_list : list
+            The list of the best features that will be used for solving the POI
+            classification problem.
+    '''
+    best_features_list = full_features_list
+    return best_features_list
+
+
 def get_enron_labels_features(enron_data, enron_feature_list):
     '''
     Retrieve the labels and features for the Enron dataset, after applying
@@ -91,7 +169,7 @@ def get_enron_labels_features(enron_data, enron_feature_list):
         enron_feature_list : list
             The list of features that needs to be extracted from the dictionary
             and returned for the classification problem. The first feature on
-            the list needs to contain the data labels. 
+            the list needs to contain the data labels.
 
     Returns:
         labels : ndarray
@@ -129,7 +207,6 @@ def remove_enron_outliers(labels, features):
             all outliers from them.
 
     '''
-    # TODO Task 2: Remove outliers
     return labels, features
 
 
@@ -152,7 +229,6 @@ def add_enron_features(labels, features):
             Array with the features for each data point, after adding the new
             features.
     '''
-    # TODO Task 3: Create new feature(s)
     return labels, features
 
 
@@ -263,7 +339,7 @@ def get_dummy_pipeline_with_memory():
     initialized with arbitrary estimators (because the specific estimators
     to use in the search will be defined by means of the param_grid).
 
-    The returned pipeline uses memory to improve search performance. 
+    The returned pipeline uses memory to improve search performance.
 
     Args:
         None
@@ -360,8 +436,13 @@ def plot_estimator_metrics(estimator, metrics, results):
     Args:
         estimator : string
             The name of the estimator whose results are going to be plotted.
+        metrics : list
+            List containing the names of the metrics evaluated for the
+            estimator during the search. The first metric in the list is
+            assumed to be the main metric, which was used to select the best
+            estimator.
         results : DataFrame
-            DataFrame with the results of the grid search.
+            DataFrame with the results of the estimator's grid search.
 
     Returns:
         None
@@ -372,8 +453,6 @@ def plot_estimator_metrics(estimator, metrics, results):
     # the results. Iterating over the different parameters we would end up
     # with a group of charts (one per parameter) to detect those parameters
     # most important for solving the particular problem.
-
-    # TODO: generalize this code to accept more than 16 experiments.
 
     main_metric_name = 'mean_test_' + metrics[0]
     data_points = len(results[main_metric_name])
@@ -453,67 +532,37 @@ def get_best_estimator(features, labels, pipelines, cv_strategy, metrics):
     return results, best_estimator
 
 
-def get_clean_enron_dataframe(enron_data):
-    '''
-    Transforms the enron_data dictionary to a DataFrame.
-
-    Args:
-        enron_data : dictionary
-            Dictionary containing the data stored in the file, in a structured
-            format.
-
-    Returns:
-        enron_df : DataFrame
-            DataFrame containing the data stored in the file, in a structured
-            pandas format.
-    '''
-    # Put the dictionary in a DataFrame and perform some cleaning operations.
-    pd.options.display.float_format = '{:20,.2f}'.format
-    enron_data.pop('TOTAL', 0)
-    enron_df = DataFrame.from_dict(enron_data, orient='index')
-    # All NaN strings are converted to Numpy nan values, which allows the
-    # describe function to produce proper numeric values for all statistics.
-    enron_df.replace('NaN', 0.0, regex=True, inplace=True)
-    # Convert True to 1 and False to 0.
-    enron_df.replace({True: 1, False: 0}, inplace=True)
-    enron_df.drop('email_address', axis=1, inplace=True)
-
-    return enron_df
-
-
-def plot_features(enron_data):
-    '''
-    Generate a graphic for each one of the features in a dataframe, in order to
-    visualize and help detect easily any outliers present on the data.
-
-    Args:
-        enron_data : dictionary
-            Dictionary containing the data stored in the file, in a structured
-            format.
-
-    Returns:
-        enron_df : DataFrame
-            This is a secondary behavior, but taking advantage of the call to
-            get_clean_enron_dataframe which is required to clean the data
-            before plotting it, we return the clean dataframe as a convenience.
-            The result is a DataFrame containing the data stored in the file,
-            in a structured pandas format.
-    '''
-    # Plot the variables to understand them better.
-    enron_df = get_clean_enron_dataframe(enron_data)
-    sns.pairplot(enron_df, hue='poi')
-
-    return enron_df
-
-
+# TODO Task 0: Load and explore the dataset and features.
 enron_data = load_data('final_project_dataset.pkl')
-enron_feature_list = get_enron_feature_list()
+enron_df = get_clean_enron_dataframe(enron_data)
+describe_dataset(enron_df, 'poi')
+plot_features(enron_df)
+
+# TODO Task 1: Select what features you'll use.
+full_enron_feature_list = get_enron_feature_list()
+enron_feature_list = get_best_enron_features(full_enron_feature_list)
+
 labels, features = get_enron_labels_features(enron_data, enron_feature_list)
 labels, features = remove_enron_outliers(labels, features)
 labels, features = add_enron_features(labels, features)
+
+# TODO Task 2: Remove outliers
+# TODO Task 3: Create new feature(s)
+
+# Task 4: Try a variety of classifiers
+# Please name your classifier clf for easy export below.
+# Note that if you want to do PCA or other multi-stage operations,
+# you'll need to use Pipelines. For more info:
+# http://scikit-learn.org/stable/modules/pipeline.html
 pipelines = get_pipelines_definitions()
-# For cross-validation we'll use a stratified shuffle split because of the
-# small size of the dataset.
+
+# Task 5: Tune your classifier to achieve better than .3 precision and recall
+# using our testing script. Check the tester.py script in the final project
+# folder for details on the evaluation method, especially the test_classifier
+# function. Because of the small dataset size, the test script uses stratified
+# shuffle split cross validation, so that's what we'll use here as well.
+# For more info:
+# http://scikit-learn.org/stable/modules/generated/sklearn.cross_validation.StratifiedShuffleSplit.html
 cv_strategy = StratifiedShuffleSplit(n_splits=10, random_state=42)
 # We define all the scoring metrics we want to measure. Recall will be the one
 # used to select the best set of parameters, and refit the identifier, because
@@ -521,30 +570,17 @@ cv_strategy = StratifiedShuffleSplit(n_splits=10, random_state=42)
 # don't want to risk missing ani pois. Recall needs to be the first metric on
 # the list, because get_best_estimator assumes the one in that position to be
 # the main metric to evaluate the select estimator.
+start_time = time()
 metrics = ['accuracy', 'recall', 'precision', 'f1']
 results, best_estimator = get_best_estimator(features, labels, pipelines,
                                              cv_strategy, metrics)
-print('\nBest Overall Estimator Found:\n{}\n'.format(best_estimator))
 get_best_estimator_metrics(results, metrics)
+training_time = round(time() - start_time, 3)
+print('\nTotal training time: {} s. \nBest Overall Estimator Found:\n{}\n'
+      .format(training_time, best_estimator))
 
-enron_df = plot_features(enron_data)
-enron_df.head()
-enron_df.describe()
 
-# Task 4: Try a variety of classifiers
-# Please name your classifier clf for easy export below.
-# Note that if you want to do PCA or other multi-stage operations,
-# you'll need to use Pipelines. For more info:
-# http://scikit-learn.org/stable/modules/pipeline.html
-
-# Task 5: Tune your classifier to achieve better than .3 precision and recall
-# using our testing script. Check the tester.py script in the final project
-# folder for details on the evaluation method, especially the test_classifier
-# function. Because of the small size of the dataset, the script uses
-# stratified shuffle split cross validation. For more info:
-# http://scikit-learn.org/stable/modules/generated/sklearn.cross_validation.StratifiedShuffleSplit.html
-
-# TODO fix this. ¿Maybe refit is needed here before getting results? 
+# TODO fix this. ¿Maybe refit is needed here before getting results?
 # results = DataFrame.from_dict(best_estimator.cv_results_)
 # results.head()
 
@@ -552,5 +588,4 @@ enron_df.describe()
 # your results. You do not need to change anything below, but make sure that
 # the version of poi_id.py that you submit can be run on its own and generates
 # the necessary .pkl files for validating your results.
-
 dump_classifier_and_data(best_estimator, enron_data, enron_feature_list)
