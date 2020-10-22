@@ -47,30 +47,65 @@ def load_data(file_path):
 
 def get_clean_enron_dataframe(enron_data):
     '''
-    Transforms the enron_data dictionary to a DataFrame.
+    Performs cleaning operations on the enron_data_frame.
 
     Args:
-        enron_data : dictionary
+        enron_data : Dictionary
             Dictionary containing the data stored in the file, in a structured
             format.
 
     Returns:
-        enron_df : DataFrame
+        enron_data_frame : DataFrame
             DataFrame containing the data stored in the file, in a structured
-            pandas format.
+            pandas format, after cleaning the data.
     '''
-    # Put the dictionary in a DataFrame and perform some cleaning operations.
     pd.options.display.float_format = '{:20,.2f}'.format
-    enron_data.pop('TOTAL', 0)
-    enron_df = DataFrame.from_dict(enron_data, orient='index')
+    enron_data_frame = DataFrame.from_dict(enron_data, orient='index')
+    enron_data_frame.drop('TOTAL', axis=0, inplace=True)
     # All NaN strings are converted to Numpy nan values, which allows the
     # describe function to produce proper numeric values for all statistics.
-    enron_df.replace('NaN', 0.0, regex=True, inplace=True)
+    enron_data_frame.replace('NaN', np.NaN, regex=True, inplace=True)
     # Convert True to 1 and False to 0.
-    enron_df.replace({True: 1, False: 0}, inplace=True)
-    enron_df.drop('email_address', axis=1, inplace=True)
+    enron_data_frame.replace({True: 1, False: 0}, inplace=True)
+    enron_data_frame.drop('email_address', axis=1, inplace=True)
+    return enron_data_frame
 
-    return enron_df
+
+def print_missing_values_table(data_frame):
+    '''
+    Generate a series of statistics for each one of the features found in the
+    dataframe in order to understand better the data.
+
+    Adapted from:
+    https://www.kaggle.com/willkoehrsen/start-here-a-gentle-introduction
+
+    Args:
+        data_frame : DataFrame
+            DataFrame we want to inspect for columns with missing values.
+
+    Returns:
+        missing_values_table : DataFrame
+            DataFrame containing the missing values statistics for the
+            data_frame columns.
+    '''
+    missing_values = data_frame.isna().sum()
+    missing_values_percentage = 100 * missing_values / len(data_frame)
+    missing_values_table = pd.concat([missing_values,
+                                      missing_values_percentage], axis=1)
+    # Rename the columns.
+    missing_values_table = missing_values_table.rename(
+                        columns={0: 'Missing Values', 1: '% of Total Values'})
+    # Leave on the table only the columns that are missing values.
+    columns_missing_values = missing_values_table.iloc[:, 1] != 0
+    missing_values_table = missing_values_table[columns_missing_values]
+    # Sort the table by percentage of missing descending.
+    missing_values_table = missing_values_table.sort_values(
+                                '% of Total Values', ascending=False).round(1)
+    # Print some summary information.
+    print('Columns in dataframe: {}.'.format(data_frame.shape[1]))
+    print('Columns missing values: {}.\n'.format(missing_values_table.shape[0]))
+    print('Missing values table:\n{}\n'.format(missing_values_table))
+    return missing_values_table
 
 
 def describe_dataset(data_frame, label_column):
@@ -86,10 +121,13 @@ def describe_dataset(data_frame, label_column):
             The name of the column containing the labels for each data point in
             the DataFrame.
     '''
-    data_frame.head(10)
-    data_frame.describe()
-    data_frame[label_column].value_counts()
-    data_frame[label_column].astype(int).plot.hist()
+    print('DataFrame head:\n{}\n'.format(data_frame.head(5)))
+    print('Enron data point count: {}\n'.format(len(data_frame)))
+    print('DataFrame description:\n{}\n'.format(data_frame.describe()))
+    print_missing_values_table(data_frame)
+    label_column = data_frame[label_column]
+    print('Label value counts:\n{}\n'.format(label_column.value_counts()))
+    label_column.astype(int).plot.hist()
 
 
 def plot_features(data_frame):
@@ -184,7 +222,6 @@ def get_enron_labels_features(enron_data, enron_feature_list):
     labels, features = targetFeatureSplit(data)
     labels = np.array(labels)
     features = np.array(features)
-    print('Enron Data Point Count: {}'.format(len(enron_data)))
     return labels, features
 
 
@@ -329,7 +366,6 @@ def get_pipelines_definitions():
                 'classify__n_clusters': [2]
         }]
     }
-
     return pipelines
 
 
@@ -535,9 +571,9 @@ def get_best_estimator(features, labels, pipelines, cv_strategy, metrics):
 
 # TODO Task 0: Load and explore the dataset and features.
 enron_data = load_data('final_project_dataset.pkl')
-enron_df = get_clean_enron_dataframe(enron_data)
-describe_dataset(enron_df, 'poi')
-plot_features(enron_df)
+enron_data_frame = get_clean_enron_dataframe(enron_data)
+describe_dataset(enron_data_frame, 'poi')
+# plot_features(enron_df)
 
 # TODO Task 1: Select what features you'll use.
 full_enron_feature_list = get_enron_feature_list()
@@ -547,46 +583,47 @@ labels, features = get_enron_labels_features(enron_data, enron_feature_list)
 labels, features = remove_enron_outliers(labels, features)
 labels, features = add_enron_features(labels, features)
 
-# TODO Task 2: Remove outliers
-# TODO Task 3: Create new feature(s)
+# # TODO Task 2: Remove outliers
+# # TODO Task 3: Create new feature(s)
 
-# Task 4: Try a variety of classifiers
-# Please name your classifier clf for easy export below.
-# Note that if you want to do PCA or other multi-stage operations,
-# you'll need to use Pipelines. For more info:
-# http://scikit-learn.org/stable/modules/pipeline.html
-pipelines = get_pipelines_definitions()
+# # Task 4: Try a variety of classifiers
+# # Please name your classifier clf for easy export below.
+# # Note that if you want to do PCA or other multi-stage operations,
+# # you'll need to use Pipelines. For more info:
+# # http://scikit-learn.org/stable/modules/pipeline.html
+# pipelines = get_pipelines_definitions()
 
-# Task 5: Tune your classifier to achieve better than .3 precision and recall
-# using our testing script. Check the tester.py script in the final project
-# folder for details on the evaluation method, especially the test_classifier
-# function. Because of the small dataset size, the test script uses stratified
-# shuffle split cross validation, so that's what we'll use here as well.
-# For more info:
-# http://scikit-learn.org/stable/modules/generated/sklearn.cross_validation.StratifiedShuffleSplit.html
-cv_strategy = StratifiedShuffleSplit(n_splits=10, random_state=42)
-# We define all the scoring metrics we want to measure. Recall will be the one
-# used to select the best set of parameters, and refit the identifier, because
-# in this case false positives are far better than false negatives, since we
-# don't want to risk missing ani pois. Recall needs to be the first metric on
-# the list, because get_best_estimator assumes the one in that position to be
-# the main metric to evaluate the select estimator.
-start_time = time()
-metrics = ['accuracy', 'recall', 'precision', 'f1']
-results, best_estimator = get_best_estimator(features, labels, pipelines,
-                                             cv_strategy, metrics)
-get_best_estimator_metrics(results, metrics)
-training_time = round(time() - start_time, 3)
-print('\nTotal training time: {} s. \nBest Overall Estimator Found:\n{}\n'
-      .format(training_time, best_estimator))
+# # Task 5: Tune your classifier to achieve better than .3 precision and recall
+# # using our testing script. Check the tester.py script in the final project
+# # folder for details on the evaluation method, especially the test_classifier
+# # function. Because of the small dataset size, the test script uses stratified
+# # shuffle split cross validation, so that's what we'll use here as well.
+# # For more info:
+# # http://scikit-learn.org/stable/modules/generated/sklearn.cross_validation.StratifiedShuffleSplit.html
+# cv_strategy = StratifiedShuffleSplit(n_splits=10, random_state=42)
+# # We define all the scoring metrics we want to measure. Recall will be the one
+# # used to select the best set of parameters, and refit the identifier, because
+# # in this case false positives are far better than false negatives, since we
+# # don't want to risk missing ani pois. Recall needs to be the first metric on
+# # the list, because get_best_estimator assumes the one in that position to be
+# # the main metric to evaluate the select estimator.
+# start_time = time()
+# metrics = ['accuracy', 'recall', 'precision', 'f1']
+# results, best_estimator = get_best_estimator(features, labels, pipelines,
+#                                              cv_strategy, metrics)
+# get_best_estimator_metrics(results, metrics)
+# training_time = round(time() - start_time, 3)
+# print('\nTotal training time: {} s. \nBest Overall Estimator Found:\n{}\n'
+#       .format(training_time, best_estimator))
 
 
-# TODO fix this. ¿Maybe refit is needed here before getting results?
-# results = DataFrame.from_dict(best_estimator.cv_results_)
-# results.head()
+# # TODO fix this. ¿Maybe refit is needed here before getting results?
+# # results = DataFrame.from_dict(best_estimator.cv_results_)
+# # results.head()
 
-# Task 6: Dump your classifier, dataset, and features_list so anyone can check
-# your results. You do not need to change anything below, but make sure that
-# the version of poi_id.py that you submit can be run on its own and generates
-# the necessary .pkl files for validating your results.
-dump_classifier_and_data(best_estimator, enron_data, enron_feature_list)
+# # Task 6: Dump your classifier, dataset, and features_list so anyone can check
+# # your results. You do not need to change anything below, but make sure that
+# # the version of poi_id.py that you submit can be run on its own and generates
+# # the necessary .pkl files for validating your results.
+# dump_classifier_and_data(best_estimator, enron_data, enron_feature_list)
+
