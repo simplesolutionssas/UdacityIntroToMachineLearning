@@ -85,6 +85,7 @@ def describe_dataset(data_frame, label_column):
         label_column : string
             The name of the column containing the labels for each data point in
             the DataFrame.
+    '''
     data_frame.head(10)
     data_frame.describe()
     data_frame[label_column].value_counts()
