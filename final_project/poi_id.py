@@ -108,7 +108,42 @@ def print_missing_values_table(data_frame):
     return missing_values_table
 
 
-def describe_dataset(data_frame, label_column):
+def print_correlation_report(data_frame, label_column_name):
+    '''
+    Generate a table and heatmap to allow visualization of the correlations
+    between input features and the target feature in the dataset.
+
+    Adapted from:
+    https://www.kaggle.com/willkoehrsen/start-here-a-gentle-introduction
+
+    Args:
+        data_frame : DataFrame
+            DataFrame we want to show correlations for.
+        label_column : string
+            The name of the column containing the labels for each data point in
+            the DataFrame.
+
+    Returns:
+        correlations_table : DataFrame
+            DataFrame containing the correlations between input features an
+            the target feature in the dataset.
+    '''
+    # Find correlations with the target and sort.
+    correlations_table = data_frame.corr()
+    poi_correlations = correlations_table[label_column_name].sort_values()
+    # Display correlations tables.
+    print('Most positive correlations to label feature ({}):\n{}\n'.format(
+                                label_column_name, poi_correlations.tail()))
+    print('Most negative correlations to label feature ({}):\n{}\n'.format(
+                                label_column_name, poi_correlations.head()))
+    # Heatmap of correlations.
+    plt.figure(figsize=(16, 12))
+    sns.heatmap(correlations_table, cmap='Blues', annot=True)
+    plt.title('Correlation Heatmap')
+    return correlations_table
+
+
+def describe_dataset(data_frame, label_column_name):
     '''
     Generate a series of statistics for each one of the features found in the
     dataframe in order to understand better the data.
@@ -117,17 +152,20 @@ def describe_dataset(data_frame, label_column):
         data_frame : DataFrame
             DataFrame containing the data stored in the file, in a structured
             format.
-        label_column : string
+        label_column_name : string
             The name of the column containing the labels for each data point in
             the DataFrame.
     '''
-    print('DataFrame head:\n{}\n'.format(data_frame.head(5)))
+    print('DataFrame info:')
+    data_frame.info()
+    print('\nDataFrame head:\n{}\n'.format(data_frame.head(5)))
     print('Enron data point count: {}\n'.format(len(data_frame)))
     print('DataFrame description:\n{}\n'.format(data_frame.describe()))
     print_missing_values_table(data_frame)
-    label_column = data_frame[label_column]
+    label_column = data_frame[label_column_name]
     print('Label value counts:\n{}\n'.format(label_column.value_counts()))
     label_column.astype(int).plot.hist()
+    print_correlation_report(data_frame, label_column_name)
 
 
 def plot_features(data_frame):
@@ -626,4 +664,3 @@ labels, features = add_enron_features(labels, features)
 # # the version of poi_id.py that you submit can be run on its own and generates
 # # the necessary .pkl files for validating your results.
 # dump_classifier_and_data(best_estimator, enron_data, enron_feature_list)
-
