@@ -103,8 +103,8 @@ def print_missing_values_table(data_frame):
                                 '% of Total Values', ascending=False).round(1)
     # Print some summary information.
     print('Columns in dataframe: {}.'.format(data_frame.shape[1]))
-    print('Columns missing values: {}.\n'.format(missing_values_table.shape[0]))
-    print('Missing values table:\n{}\n'.format(missing_values_table))
+    print('Columns missing values: {}.'.format(missing_values_table.shape[0]))
+    print('\nMissing values table:\n{}\n'.format(missing_values_table))
     return missing_values_table
 
 
