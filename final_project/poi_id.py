@@ -42,6 +42,7 @@ def load_data(file_path):
     file = open(file_path, 'r')
     dataset = pickle.load(file)
     file.close()
+
     return dataset
 
 
@@ -68,6 +69,7 @@ def get_clean_enron_dataframe(enron_data):
     # Convert True to 1 and False to 0.
     enron_data_frame.replace({True: 1, False: 0}, inplace=True)
     enron_data_frame.drop('email_address', axis=1, inplace=True)
+
     return enron_data_frame
 
 
@@ -102,16 +104,48 @@ def print_missing_values_table(data_frame):
     missing_values_table = missing_values_table.sort_values(
                                 '% of Total Values', ascending=False).round(1)
     # Print some summary information.
-    print('Columns in dataframe: {}.'.format(data_frame.shape[1]))
+    print('\nColumns in dataframe: {}.'.format(data_frame.shape[1]))
     print('Columns missing values: {}.'.format(missing_values_table.shape[0]))
-    print('\nMissing values table:\n{}\n'.format(missing_values_table))
+    print('\nMissing values table:')
+    display(missing_values_table)
+
     return missing_values_table
 
 
-def print_correlation_report(data_frame, label_column_name):
+def print_target_correlation_report(data_frame, correlations_table,
+                                    label_column_name):
+    '''
+    Generate a report for the most positive and most negative feature
+    correlations with the target feature.
+
+    Args:
+        data_frame : DataFrame
+            DataFrame we want to show correlations with the target feature for.
+        correlations_table : DataFrame
+            DataFrame containing the correlations between all data features.
+        label_column : string
+            The name of the column containing the labels for each data point in
+            the DataFrame.
+    '''
+    label_column = data_frame[label_column_name]
+    print('\nLabel value counts:')
+    display(label_column.value_counts())
+    # display(label_column.astype(int).plot.hist())
+    # Get correlations with the target feature and sort them.
+    poi_correlations = correlations_table[label_column_name].sort_values()
+    # Display correlations tables.
+    print('Most positive correlations to ({}) feature:'
+          .format(label_column_name))
+    display(poi_correlations.tail())
+    print('Most negative correlations to ({}) feature:'
+          .format(label_column_name))
+    display(poi_correlations.head())
+
+
+def display_correlation_heatmap(data_frame):
     '''
     Generate a table and heatmap to allow visualization of the correlations
-    between input features and the target feature in the dataset.
+    between input features in the dataset.
 
     Adapted from:
     https://www.kaggle.com/willkoehrsen/start-here-a-gentle-introduction
@@ -119,27 +153,17 @@ def print_correlation_report(data_frame, label_column_name):
     Args:
         data_frame : DataFrame
             DataFrame we want to show correlations for.
-        label_column : string
-            The name of the column containing the labels for each data point in
-            the DataFrame.
 
     Returns:
         correlations_table : DataFrame
-            DataFrame containing the correlations between input features an
-            the target feature in the dataset.
+            DataFrame containing the correlations between all data features.
     '''
-    # Find correlations with the target and sort.
     correlations_table = data_frame.corr()
-    poi_correlations = correlations_table[label_column_name].sort_values()
-    # Display correlations tables.
-    print('Most positive correlations to label feature ({}):\n{}\n'.format(
-                                label_column_name, poi_correlations.tail()))
-    print('Most negative correlations to label feature ({}):\n{}\n'.format(
-                                label_column_name, poi_correlations.head()))
     # Heatmap of correlations.
     plt.figure(figsize=(16, 12))
     sns.heatmap(correlations_table, cmap='Blues', annot=True)
     plt.title('Correlation Heatmap')
+
     return correlations_table
 
 
@@ -156,16 +180,17 @@ def describe_dataset(data_frame, label_column_name):
             The name of the column containing the labels for each data point in
             the DataFrame.
     '''
-    print('DataFrame info:')
+    print('\nDataFrame head:')
+    display(data_frame.head(5))
+    print('\nEnron data point count: {}'.format(len(data_frame)))
+    print('\nDataFrame info:')
     data_frame.info()
-    print('\nDataFrame head:\n{}\n'.format(data_frame.head(5)))
-    print('Enron data point count: {}\n'.format(len(data_frame)))
-    print('DataFrame description:\n{}\n'.format(data_frame.describe()))
+    print('\nDataFrame description:')
+    display(data_frame.describe())
     print_missing_values_table(data_frame)
-    label_column = data_frame[label_column_name]
-    print('Label value counts:\n{}\n'.format(label_column.value_counts()))
-    label_column.astype(int).plot.hist()
-    print_correlation_report(data_frame, label_column_name)
+    correlations_table = display_correlation_heatmap(data_frame)
+    print_target_correlation_report(data_frame, correlations_table,
+                                    label_column_name)
 
 
 def plot_features(data_frame):
@@ -213,6 +238,7 @@ def get_enron_feature_list():
                      'restricted_stock', 'director_fees', 'to_messages',
                      'from_poi_to_this_person', 'from_messages',
                      'from_this_person_to_poi', 'shared_receipt_with_poi']
+
     return features_list
 
 
@@ -231,6 +257,7 @@ def get_best_enron_features(full_features_list):
             classification problem.
     '''
     best_features_list = full_features_list
+
     return best_features_list
 
 
@@ -260,6 +287,7 @@ def get_enron_labels_features(enron_data, enron_feature_list):
     labels, features = targetFeatureSplit(data)
     labels = np.array(labels)
     features = np.array(features)
+
     return labels, features
 
 
@@ -283,6 +311,7 @@ def remove_enron_outliers(labels, features):
             all outliers from them.
 
     '''
+
     return labels, features
 
 
@@ -305,6 +334,7 @@ def add_enron_features(labels, features):
             Array with the features for each data point, after adding the new
             features.
     '''
+
     return labels, features
 
 
@@ -404,6 +434,7 @@ def get_pipelines_definitions():
                 'classify__n_clusters': [2]
         }]
     }
+
     return pipelines
 
 
@@ -432,6 +463,7 @@ def get_dummy_pipeline_with_memory():
                                    ('reduce_dim', PCA()),
                                    ('classify', GaussianNB())],
                             memory=tmpdir)
+
     return pipeline
 
 
