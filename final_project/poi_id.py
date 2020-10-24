@@ -95,8 +95,7 @@ def print_missing_values_table(data_frame):
     missing_values_table = pd.concat([missing_values,
                                       missing_values_percentage], axis=1)
     # Rename the columns.
-    missing_values_table = missing_values_table.rename(
-                        columns={0: 'Missing Values', 1: '% of Total Values'})
+    missing_values_table.columns=['Missing Values', '% of Total Values']
     # Leave on the table only the columns that are missing values.
     columns_missing_values = missing_values_table.iloc[:, 1] != 0
     missing_values_table = missing_values_table[columns_missing_values]
@@ -112,8 +111,7 @@ def print_missing_values_table(data_frame):
     return missing_values_table
 
 
-def print_target_correlation_report(data_frame, correlations_table,
-                                    label_column_name):
+def print_target_correlation_report(correlations_table, label_column_name):
     '''
     Generate a report for the most positive and most negative feature
     correlations with the target feature.
@@ -127,19 +125,22 @@ def print_target_correlation_report(data_frame, correlations_table,
             The name of the column containing the labels for each data point in
             the DataFrame.
     '''
-    label_column = data_frame[label_column_name]
-    print('\nLabel value counts:')
-    display(label_column.value_counts())
-    # display(label_column.astype(int).plot.hist())
-    # Get correlations with the target feature and sort them.
-    poi_correlations = correlations_table[label_column_name].sort_values()
-    # Display correlations tables.
-    print('Most positive correlations to ({}) feature:'
-          .format(label_column_name))
-    display(poi_correlations.tail())
-    print('Most negative correlations to ({}) feature:'
-          .format(label_column_name))
-    display(poi_correlations.head())
+    target_correlations = correlations_table[label_column_name]
+    absolute_target_correlations = abs(target_correlations)
+    target_correlations_table = pd.concat([target_correlations,
+                                           absolute_target_correlations],
+                                          axis=1)
+    # Rename the columns.
+    target_correlations_table.columns=['Correlation', 'Absolute Correlation']
+    # Leave only the features that aren't the target or have a nan value.
+    target_correlations_table.drop(label_column_name, axis=0, inplace=True)
+    correlation_features = pd.notnull(target_correlations_table.iloc[:, 1])
+    target_correlations_table = target_correlations_table[correlation_features]
+    # Sort the table by percentage of missing descending.
+    target_correlations_table.sort_values('Absolute Correlation',
+                                          ascending=False, inplace=True)
+    print('Feature correlations to ({}) feature:'.format(label_column_name))
+    display(target_correlations_table)
 
 
 def display_correlation_heatmap(data_frame):
@@ -189,8 +190,9 @@ def describe_dataset(data_frame, label_column_name):
     display(data_frame.describe())
     print_missing_values_table(data_frame)
     correlations_table = display_correlation_heatmap(data_frame)
-    print_target_correlation_report(data_frame, correlations_table,
-                                    label_column_name)
+    print('\nLabel value counts:\n{}'.format(
+                                data_frame[label_column_name].value_counts()))
+    print_target_correlation_report(correlations_table, label_column_name)
 
 
 def plot_features(data_frame):
@@ -639,7 +641,7 @@ def get_best_estimator(features, labels, pipelines, cv_strategy, metrics):
     return results, best_estimator
 
 
-# TODO Task 0: Load and explore the dataset and features.
+# Task 0: Load and explore the dataset and features.
 enron_data = load_data('final_project_dataset.pkl')
 enron_data_frame = get_clean_enron_dataframe(enron_data)
 describe_dataset(enron_data_frame, 'poi')
@@ -648,7 +650,6 @@ describe_dataset(enron_data_frame, 'poi')
 # TODO Task 1: Select what features you'll use.
 full_enron_feature_list = get_enron_feature_list()
 enron_feature_list = get_best_enron_features(full_enron_feature_list)
-
 labels, features = get_enron_labels_features(enron_data, enron_feature_list)
 labels, features = remove_enron_outliers(labels, features)
 labels, features = add_enron_features(labels, features)
@@ -656,43 +657,43 @@ labels, features = add_enron_features(labels, features)
 # # TODO Task 2: Remove outliers
 # # TODO Task 3: Create new feature(s)
 
-# # Task 4: Try a variety of classifiers
-# # Please name your classifier clf for easy export below.
-# # Note that if you want to do PCA or other multi-stage operations,
-# # you'll need to use Pipelines. For more info:
-# # http://scikit-learn.org/stable/modules/pipeline.html
-# pipelines = get_pipelines_definitions()
+# Task 4: Try a variety of classifiers
+# Please name your classifier clf for easy export below.
+# Note that if you want to do PCA or other multi-stage operations,
+# you'll need to use Pipelines. For more info:
+# http://scikit-learn.org/stable/modules/pipeline.html
+pipelines = get_pipelines_definitions()
 
-# # Task 5: Tune your classifier to achieve better than .3 precision and recall
-# # using our testing script. Check the tester.py script in the final project
-# # folder for details on the evaluation method, especially the test_classifier
-# # function. Because of the small dataset size, the test script uses stratified
-# # shuffle split cross validation, so that's what we'll use here as well.
-# # For more info:
-# # http://scikit-learn.org/stable/modules/generated/sklearn.cross_validation.StratifiedShuffleSplit.html
-# cv_strategy = StratifiedShuffleSplit(n_splits=10, random_state=42)
-# # We define all the scoring metrics we want to measure. Recall will be the one
-# # used to select the best set of parameters, and refit the identifier, because
-# # in this case false positives are far better than false negatives, since we
-# # don't want to risk missing ani pois. Recall needs to be the first metric on
-# # the list, because get_best_estimator assumes the one in that position to be
-# # the main metric to evaluate the select estimator.
-# start_time = time()
-# metrics = ['accuracy', 'recall', 'precision', 'f1']
-# results, best_estimator = get_best_estimator(features, labels, pipelines,
-#                                              cv_strategy, metrics)
-# get_best_estimator_metrics(results, metrics)
-# training_time = round(time() - start_time, 3)
-# print('\nTotal training time: {} s. \nBest Overall Estimator Found:\n{}\n'
-#       .format(training_time, best_estimator))
+# Task 5: Tune your classifier to achieve better than .3 precision and recall
+# using our testing script. Check the tester.py script in the final project
+# folder for details on the evaluation method, especially the test_classifier
+# function. Because of the small dataset size, the test script uses stratified
+# shuffle split cross validation, so that's what we'll use here as well.
+# For more info:
+# http://scikit-learn.org/stable/modules/generated/sklearn.cross_validation.StratifiedShuffleSplit.html
+cv_strategy = StratifiedShuffleSplit(n_splits=10, random_state=42)
+# We define all the scoring metrics we want to measure. Recall will be the one
+# used to select the best set of parameters, and refit the identifier, because
+# in this case false positives are far better than false negatives, since we
+# don't want to risk missing ani pois. Recall needs to be the first metric on
+# the list, because get_best_estimator assumes the one in that position to be
+# the main metric to evaluate the select estimator.
+start_time = time()
+metrics = ['accuracy', 'recall', 'precision', 'f1']
+results, best_estimator = get_best_estimator(features, labels, pipelines,
+                                             cv_strategy, metrics)
+get_best_estimator_metrics(results, metrics)
+training_time = round(time() - start_time, 3)
+print('\nTotal training time: {} s. \nBest Overall Estimator Found:\n{}\n'
+      .format(training_time, best_estimator))
 
 
-# # TODO fix this. ¿Maybe refit is needed here before getting results?
-# # results = DataFrame.from_dict(best_estimator.cv_results_)
-# # results.head()
+# TODO fix this. ¿Maybe refit is needed here before getting results?
+# results = DataFrame.from_dict(best_estimator.cv_results_)
+# results.head()
 
-# # Task 6: Dump your classifier, dataset, and features_list so anyone can check
-# # your results. You do not need to change anything below, but make sure that
-# # the version of poi_id.py that you submit can be run on its own and generates
-# # the necessary .pkl files for validating your results.
-# dump_classifier_and_data(best_estimator, enron_data, enron_feature_list)
+# Task 6: Dump your classifier, dataset, and features_list so anyone can check
+# your results. You do not need to change anything below, but make sure that
+# the version of poi_id.py that you submit can be run on its own and generates
+# the necessary .pkl files for validating your results.
+dump_classifier_and_data(best_estimator, enron_data, enron_feature_list)
