@@ -626,7 +626,7 @@ def get_best_estimator(features, labels, pipelines, cv_strategy, metrics):
     print('\nPerforming Model Optimizations...')
     best_main_metric_value = -1.0
     best_estimator = ''
-    results = ''
+    best_results = ''
     pipeline = get_dummy_pipeline_with_memory()
     for estimator, pipeline_definition in pipelines.items():
         print('\nAnalyzing {}...'.format(estimator))
@@ -641,6 +641,7 @@ def get_best_estimator(features, labels, pipelines, cv_strategy, metrics):
         plot_estimator_metrics(estimator, metrics, results)
         if best_estimator_metrics[0] > best_main_metric_value:
             best_estimator = clf.best_estimator_
+            best_results = results
             best_main_metric_value = best_estimator_metrics[0]
 
     return best_results, best_estimator
