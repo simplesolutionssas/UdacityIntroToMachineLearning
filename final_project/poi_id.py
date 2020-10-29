@@ -95,7 +95,7 @@ def print_missing_values_table(data_frame):
     missing_values_table = pd.concat([missing_values,
                                       missing_values_percentage], axis=1)
     # Rename the columns.
-    missing_values_table.columns=['Missing Values', '% of Total Values']
+    missing_values_table.columns = ['Missing Values', '% of Total Values']
     # Leave on the table only the columns that are missing values.
     columns_missing_values = missing_values_table.iloc[:, 1] != 0
     missing_values_table = missing_values_table[columns_missing_values]
@@ -124,6 +124,9 @@ def print_target_correlation_report(correlations_table, label_column_name):
         label_column : string
             The name of the column containing the labels for each data point in
             the DataFrame.
+
+    Returns:
+        None
     '''
     target_correlations = correlations_table[label_column_name]
     absolute_target_correlations = abs(target_correlations)
@@ -131,7 +134,7 @@ def print_target_correlation_report(correlations_table, label_column_name):
                                            absolute_target_correlations],
                                           axis=1)
     # Rename the columns.
-    target_correlations_table.columns=['Correlation', 'Absolute Correlation']
+    target_correlations_table.columns = ['Correlation', 'Absolute Correlation']
     # Leave only the features that aren't the target or have a nan value.
     target_correlations_table.drop(label_column_name, axis=0, inplace=True)
     correlation_features = pd.notnull(target_correlations_table.iloc[:, 1])
@@ -181,6 +184,9 @@ def describe_dataset(data_frame, label_column_name):
         label_column_name : string
             The name of the column containing the labels for each data point in
             the DataFrame.
+
+    Returns:
+        None
     '''
     print('\nDataFrame head:')
     display(data_frame.head(5))
@@ -565,7 +571,6 @@ def plot_estimator_metrics(estimator, metrics, results):
     # the results. Iterating over the different parameters we would end up
     # with a group of charts (one per parameter) to detect those parameters
     # most important for solving the particular problem.
-
     main_metric_name = 'mean_test_' + metrics[0]
     data_points = len(results[main_metric_name])
     x_values = np.arange(data_points)
@@ -620,7 +625,7 @@ def get_best_estimator(features, labels, pipelines, cv_strategy, metrics):
     Returns:
         best_results : DataFrame
             DataFrame with the best results of the grid search.
-        estimator : Object
+        best_estimator : Object
             This is the best estimator that was found during the search.
     '''
     print('\nPerforming Model Optimizations...')
