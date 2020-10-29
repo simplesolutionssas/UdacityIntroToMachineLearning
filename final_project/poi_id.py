@@ -685,6 +685,31 @@ def custom_score(labels, predictions):
     return total_score
 
 
+def print_overall_results(start_time, results, metrics, best_estimator):
+    '''
+    Print the training time, best metric values, best estimator found and other.
+
+    Args:
+        start_time : float
+            The time when the search process started.
+        results : DataFrame
+            DataFrame with the results of the estimator's grid search.
+        metrics : list
+            List containing the names of the metrics evaluated for the
+            estimator during the search.
+        best_estimator : string
+            The definition of the best estimator found.
+
+    Returns:
+        None
+    '''
+    training_time = round(time() - start_time, 3)
+    print('\nTotal training time: {} s'.format(training_time))
+    print('\nBest Overall Results:')
+    get_best_estimator_metrics(results, list(sorted(metrics.keys())))
+    print('\nBest Overall Estimator Found:\n{}'.format(best_estimator))
+
+
 # Task 0: Load and explore the dataset and features.
 enron_data = load_data('final_project_dataset.pkl')
 enron_data_frame = get_clean_enron_dataframe(enron_data)
@@ -731,11 +756,7 @@ metrics = {
 }
 results, best_estimator = get_best_estimator(features, labels, pipelines,
                                              cv_strategy, metrics)
-training_time = round(time() - start_time, 3)
-print('\nTotal training time: {} s'.format(training_time))
-print('\nBest Overall Results:')
-get_best_estimator_metrics(results, metrics)
-print('\nBest Overall Estimator Found:\n{}'.format(best_estimator))
+print_overall_results(start_time, results, metrics, best_estimator)
 
 # TODO fix this. ¿Maybe refit is needed here before getting results?
 # results = DataFrame.from_dict(best_estimator.cv_results_)
