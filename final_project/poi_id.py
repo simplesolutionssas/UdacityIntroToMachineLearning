@@ -259,7 +259,9 @@ def get_best_enron_features(full_features_list):
             The list of the best features that will be used for solving the POI
             classification problem.
     '''
-    best_features_list = full_features_list
+    best_features_list = ['poi', 'loan_advances', 'exercised_stock_options',
+                          'total_stock_value', 'bonus', 'deferred_income',
+                          'salary']
 
     return best_features_list
 
@@ -356,7 +358,7 @@ def get_pipelines_definitions():
             for the given problem.
     '''
     scale_variations = [None, RobustScaler(), MinMaxScaler(), Normalizer()]
-    reduce_dim_variations = [None, PCA(2), PCA(4), PCA(8), PCA(16)]
+    reduce_dim_variations = [None, PCA(2), PCA(3), PCA(4)]
     pipelines = {
         'GaussianNB': [{
             'classify': [GaussianNB()],
@@ -371,33 +373,33 @@ def get_pipelines_definitions():
             'classify__splitter': ['best', 'random'],
             'classify__min_samples_split': [2, 4, 8, 16, 32, 64]
         }],
-        # I wasn't able to make SVC work with the 'linear' kernel.
+        # I wasn't able to make SVC work with the 'linear' or 'poly' kernels.
         'SVC': [{
-            'classify': [SVC(random_state=42)],
-            'scale': scale_variations,
-            'reduce_dim': reduce_dim_variations,
-            'classify__kernel': ['rbf'],
-            'classify__gamma': ['auto', 'scale'],
-            'classify__C': [10, 100, 1000],
-            }, {
-            'classify': [SVC(random_state=42)],
-            'scale': scale_variations,
-            'reduce_dim': reduce_dim_variations,
-            'classify__kernel': ['sigmoid'],
-            'classify__gamma': ['auto', 'scale'],
-            'classify__C': [10, 100, 1000]
-            }, {
-            'classify': [SVC(random_state=42)],
-            # With other scalers the search won't finish.
-            'scale': [None, MinMaxScaler()],
-            # With values over 6 (8, 16, None) the search won't finish.
-            'reduce_dim': [PCA(2), PCA(4), PCA(6)],
-            'classify__kernel': ['poly'],
-            'classify__gamma': ['auto', 'scale'],
-            'classify__C': [10, 100, 1000],
-            # With a value of 2 the search won't finish.
-            'classify__degree': [3, 4, 5]
-        }],
+                    'classify': [SVC(random_state=42)],
+                    'scale': scale_variations,
+                    'reduce_dim': reduce_dim_variations,
+                    'classify__kernel': ['rbf'],
+                    'classify__gamma': ['auto', 'scale'],
+                    'classify__C': [10, 100, 1000],
+                }, {
+                    'classify': [SVC(random_state=42)],
+                    'scale': scale_variations,
+                    'reduce_dim': reduce_dim_variations,
+                    'classify__kernel': ['sigmoid'],
+                    'classify__gamma': ['auto', 'scale'],
+                    'classify__C': [10, 100, 1000]
+                }, {
+                    'classify': [SVC(random_state=42)],
+                    # With other scalers the search won't finish.
+                    'scale': [None, MinMaxScaler()],
+                    # With values over 6 (8, 16, None) the search won't finish.
+                    'reduce_dim': [PCA(2), PCA(4)],
+                    'classify__kernel': ['poly'],
+                    'classify__gamma': ['auto', 'scale'],
+                    'classify__C': [10, 100, 1000],
+                    # With a value of 2 or 3 the search won't finish.
+                    'classify__degree': [4, 5]
+            }],
         'KNeighborsClassifier': [{
             'classify': [KNeighborsClassifier()],
             'scale': scale_variations,
@@ -650,7 +652,7 @@ enron_data_frame = get_clean_enron_dataframe(enron_data)
 describe_dataset(enron_data_frame, 'poi')
 # plot_features(enron_df)
 
-# TODO Task 1: Select what features you'll use.
+# Task 1: Select what features you'll use.
 full_enron_feature_list = get_enron_feature_list()
 enron_feature_list = get_best_enron_features(full_enron_feature_list)
 labels, features = get_enron_labels_features(enron_data, enron_feature_list)
