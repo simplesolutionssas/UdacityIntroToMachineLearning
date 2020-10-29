@@ -139,7 +139,7 @@ def print_target_correlation_report(correlations_table, label_column_name):
     # Sort the table by percentage of missing descending.
     target_correlations_table.sort_values('Absolute Correlation',
                                           ascending=False, inplace=True)
-    print('Feature correlations to ({}) feature:'.format(label_column_name))
+    print('\nFeature correlations to ({}) feature:'.format(label_column_name))
     display(target_correlations_table)
 
 
@@ -160,10 +160,11 @@ def display_correlation_heatmap(data_frame):
             DataFrame containing the correlations between all data features.
     '''
     correlations_table = data_frame.corr()
-    # Heatmap of correlations.
+    print('\nCorrelation Heatmap:')
     plt.figure(figsize=(16, 12))
     sns.heatmap(correlations_table, cmap='Blues', annot=True)
     plt.title('Correlation Heatmap')
+    plt.show()
 
     return correlations_table
 
@@ -615,10 +616,12 @@ def get_best_estimator(features, labels, pipelines, cv_strategy, metrics):
             estimator.
 
     Returns:
+        best_results : DataFrame
+            DataFrame with the best results of the grid search.
         estimator : Object
             This is the best estimator that was found during the search.
     '''
-    print('Performing Model Optimizations...')
+    print('\nPerforming Model Optimizations...')
     best_main_metric_value = -1.0
     best_estimator = ''
     results = ''
@@ -638,7 +641,7 @@ def get_best_estimator(features, labels, pipelines, cv_strategy, metrics):
             best_estimator = clf.best_estimator_
             best_main_metric_value = best_estimator_metrics[0]
 
-    return results, best_estimator
+    return best_results, best_estimator
 
 
 # Task 0: Load and explore the dataset and features.
@@ -682,11 +685,11 @@ start_time = time()
 metrics = ['accuracy', 'recall', 'precision', 'f1']
 results, best_estimator = get_best_estimator(features, labels, pipelines,
                                              cv_strategy, metrics)
-get_best_estimator_metrics(results, metrics)
 training_time = round(time() - start_time, 3)
-print('\nTotal training time: {} s. \nBest Overall Estimator Found:\n{}\n'
-      .format(training_time, best_estimator))
-
+print('\nTotal training time: {} s'.format(training_time))
+print('\nBest Overall Results:')
+get_best_estimator_metrics(results, metrics)
+print('\nBest Overall Estimator Found:\n{}'.format(best_estimator))
 
 # TODO fix this. ¿Maybe refit is needed here before getting results?
 # results = DataFrame.from_dict(best_estimator.cv_results_)
