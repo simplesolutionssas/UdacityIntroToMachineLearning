@@ -2,12 +2,13 @@
 
 import sys
 from time import time
-import numpy as np
 import pickle
-from numpy.lib.function_base import average
 import pandas as pd
 import seaborn as sns
+import numpy as np
 from pandas import DataFrame
+from numpy.lib.function_base import average
+from collections import OrderedDict
 from matplotlib import pyplot as plt
 from sklearn.preprocessing import RobustScaler, MinMaxScaler, Normalizer
 from sklearn.decomposition import PCA
@@ -631,9 +632,7 @@ def get_best_estimator(features, labels, pipelines, cv_strategy, metrics):
         best_estimator : Object
             This is the best estimator that was found during the search.
     '''
-    # It's important to sort the keys, because the first metric is the one that
-    # is used to choose the best estimator.
-    metric_names = list(sorted(metrics.keys()))
+    metric_names = list(metrics.keys())
     print('\nPerforming Model Optimizations...')
     best_main_metric_value = -1.0
     best_estimator = ''
@@ -680,14 +679,15 @@ def custom_score(labels, predictions):
     accuracy = accuracy_score(labels, predictions)
     precision = precision_score(labels, predictions)
     recall = recall_score(labels, predictions)
-    total_score = average([accuracy * 2, precision, recall])
+    # accuracy is included twice in the average, to give increase its weight.
+    total_score = average([accuracy, accuracy, precision, recall])
 
     return total_score
 
 
 def print_overall_results(start_time, results, metrics, best_estimator):
     '''
-    Print the training time, best metric values, best estimator found and other.
+    Print the best estimator with the respective metrics and other information.
 
     Args:
         start_time : float
@@ -706,7 +706,7 @@ def print_overall_results(start_time, results, metrics, best_estimator):
     training_time = round(time() - start_time, 3)
     print('\nTotal training time: {} s'.format(training_time))
     print('\nBest Overall Results:')
-    get_best_estimator_metrics(results, list(sorted(metrics.keys())))
+    get_best_estimator_metrics(results, list(metrics.keys()))
     print('\nBest Overall Estimator Found:\n{}'.format(best_estimator))
 
 
@@ -748,12 +748,13 @@ cv_strategy = StratifiedShuffleSplit(n_splits=10, random_state=42)
 # the list, because get_best_estimator assumes the one in that position to be
 # the main metric to evaluate the select estimator.
 start_time = time()
-metrics = {
-    'overall': make_scorer(custom_score),
-    'accuracy': 'accuracy',
-    'recall': 'recall',
-    'precision': 'precision',
-}
+# To guarantee dictionary order, we pass an iterable of key-value pairs.
+metrics = OrderedDict([
+    ('overall', make_scorer(custom_score)),
+    ('accuracy', 'accuracy'),
+    ('recall', 'recall'),
+    ('precision', 'precision'),
+])
 results, best_estimator = get_best_estimator(features, labels, pipelines,
                                              cv_strategy, metrics)
 print_overall_results(start_time, results, metrics, best_estimator)
