@@ -4,6 +4,7 @@ import sys
 from time import time
 import numpy as np
 import pickle
+from numpy.lib.function_base import average
 import pandas as pd
 import seaborn as sns
 from pandas import DataFrame
@@ -20,6 +21,8 @@ from sklearn.pipeline import Pipeline
 from backports import tempfile
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.metrics import accuracy_score, precision_score, recall_score
+from sklearn.metrics import make_scorer
 from tester import dump_classifier_and_data
 sys.path.append('../tools/')
 from feature_format import featureFormat, targetFeatureSplit
@@ -616,11 +619,11 @@ def get_best_estimator(features, labels, pipelines, cv_strategy, metrics):
         cv_strategy : cross-validation generator
             Method from the model_selection package that defines a cross
             validation strategy to be used for this particular problem.
-        metrics : list
-            List containing the different metrics we want to measure for each
-            one of the evaluated estimators. The first metric in the list is
-            assumed to be the main metric to use for choosing the best
-            estimator.
+        metrics : Dictionary
+            Dictionary containing the names of the different metrics we want to
+            measure for each one of the evaluated estimators. The first metric
+            in the Dictionary is assumed to be the main metric to use for
+            choosing the best estimator.
 
     Returns:
         best_results : DataFrame
@@ -628,6 +631,9 @@ def get_best_estimator(features, labels, pipelines, cv_strategy, metrics):
         best_estimator : Object
             This is the best estimator that was found during the search.
     '''
+    # It's important to sort the keys, because the first metric is the one that
+    # is used to choose the best estimator.
+    metric_names = list(sorted(metrics.keys()))
     print('\nPerforming Model Optimizations...')
     best_main_metric_value = -1.0
     best_estimator = ''
@@ -636,20 +642,47 @@ def get_best_estimator(features, labels, pipelines, cv_strategy, metrics):
     for estimator, pipeline_definition in pipelines.items():
         print('\nAnalyzing {}...'.format(estimator))
         clf = GridSearchCV(pipeline, param_grid=pipeline_definition,
-                           scoring=metrics, refit=metrics[0], cv=cv_strategy,
-                           iid=False, verbose=True, return_train_score=True,
-                           n_jobs=8, error_score='raise')
+                           cv=cv_strategy, scoring=metrics,
+                           refit=metric_names[0], iid=False,
+                           n_jobs=8, verbose=True, error_score='raise',
+                           return_train_score=True)
         clf.fit(features, labels)
         results = clf.cv_results_
         print('\nBest {} Found:\n{}\n'.format(estimator, clf.best_estimator_))
-        best_estimator_metrics = get_best_estimator_metrics(results, metrics)
-        plot_estimator_metrics(estimator, metrics, results)
+        best_estimator_metrics = get_best_estimator_metrics(results,
+                                                            metric_names)
+        plot_estimator_metrics(estimator, metric_names, results)
         if best_estimator_metrics[0] > best_main_metric_value:
             best_estimator = clf.best_estimator_
             best_results = results
             best_main_metric_value = best_estimator_metrics[0]
 
     return best_results, best_estimator
+
+
+def custom_score(labels, predictions):
+    '''
+    Calculate the score for the predictions, based on the labels passed to the
+    function, using a combination of accuracy, recall and precision, in an
+    attempt to get a model with a good accuracy and good enough precision and
+    recall values.
+
+    Args:
+        labels : ndarray
+            Array with the labels for each data point in the dataset.
+        predictions : ndarray
+            Array with the predictions for each data point in the dataset.
+
+    Returns:
+        total_score : double
+            The score assigned to the model, given the predictions.
+    '''
+    accuracy = accuracy_score(labels, predictions)
+    precision = precision_score(labels, predictions)
+    recall = recall_score(labels, predictions)
+    total_score = average([accuracy * 2, precision, recall])
+
+    return total_score
 
 
 # Task 0: Load and explore the dataset and features.
@@ -690,7 +723,12 @@ cv_strategy = StratifiedShuffleSplit(n_splits=10, random_state=42)
 # the list, because get_best_estimator assumes the one in that position to be
 # the main metric to evaluate the select estimator.
 start_time = time()
-metrics = ['accuracy', 'recall', 'precision', 'f1']
+metrics = {
+    'overall': make_scorer(custom_score),
+    'accuracy': 'accuracy',
+    'recall': 'recall',
+    'precision': 'precision',
+}
 results, best_estimator = get_best_estimator(features, labels, pipelines,
                                              cv_strategy, metrics)
 training_time = round(time() - start_time, 3)
