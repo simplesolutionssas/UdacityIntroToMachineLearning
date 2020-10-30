@@ -26,7 +26,6 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score
 from sklearn.metrics import make_scorer
 from tester import dump_classifier_and_data
 sys.path.append('../tools/')
-from feature_format import featureFormat, targetFeatureSplit
 
 
 def load_data(file_path):
@@ -255,79 +254,129 @@ def get_enron_feature_list():
     return features_list
 
 
-def get_best_enron_features(full_features_list):
-    '''
-    Select the best features to use for the Enron POI classification problem:
+def get_labels_features(data_dictionary, feature_list):
+    """
+    Retrieve the labels and features for the given dataset, after applying
+    some arranging and cleaning operations:
+    - Keys (record IDs) are sorted by alphabetical order.
+    - NaN strings are converted to 0.0.
+    - Data points where all features have a value of zero are removed.
+
+    Note that the first feature is assumed to be the label feature and is not
+    used for determining if the data point should be removed or not.
 
     Args:
-        full_features_list : list
-            The full list of features that can be used for solving the POI
-            classification problem.
-
-    Returns:
-        best_features_list : list
-            The list of the best features that will be used for solving the POI
-            classification problem.
-    '''
-    best_features_list = ['poi', 'loan_advances', 'exercised_stock_options',
-                          'total_stock_value', 'bonus', 'deferred_income',
-                          'salary']
-
-    return best_features_list
-
-
-def get_enron_labels_features(enron_data, enron_feature_list):
-    '''
-    Retrieve the labels and features for the Enron dataset, after applying
-    some cleaning operations.
-
-    Args:
-        enron_data : dictionary
+        data_dictionary : dictionary
             Dictionary containing the data stored in the file, in a structured
             format.
-        enron_feature_list : list
+        feature_list : list
             The list of features that needs to be extracted from the dictionary
             and returned for the classification problem. The first feature on
             the list needs to contain the data labels.
 
     Returns:
         labels : ndarray
-            Array with the labels for each data point in the enron dataset.
+            Array with the labels for each data point in the dataset.
         features : ndarray
-            Array with the features for each data point in the enron dataset.
-    '''
-    # Remove the TOTAL row from the dataset
-    enron_data.pop('TOTAL', 0)
-    data = featureFormat(enron_data, enron_feature_list, sort_keys=True)
-    labels, features = targetFeatureSplit(data)
+            Array with the features for each data point in the dataset.
+    """
+    labels = []
+    features = []
+    keys = sorted(data_dictionary.keys())
+    for key in keys:
+        data_point_values = []
+        # Get the data point values in a list.
+        for feature in feature_list:
+            try:
+                data_dictionary[key][feature]
+            except KeyError:
+                print('Error: key {} not present'.format(feature))
+
+            value = data_dictionary[key][feature]
+            if value == 'NaN':
+                value = 0
+            data_point_values.append(float(value))
+
+        # Logic for deciding whether or not to add the data point. The first
+        # feature is assumed to be the label feature, and is not considered.
+        label_value = data_point_values[0]
+        feature_values = data_point_values[1:]
+        for value in feature_values:
+            if value != 0 and value != 'NaN':
+                labels.append(np.array(label_value))
+                features.append(np.array(feature_values))
+                break
+
     labels = np.array(labels)
     features = np.array(features)
+    print('\nCurrent features and labels shapes:')
+    print('Enron labels shape: {}'.format(labels.shape))
+    print('Enron features shape: {}'.format(features.shape))
 
     return labels, features
 
 
-def remove_enron_outliers(labels, features):
+def get_best_features_names(labels, features, feature_list, top_n_features):
+    '''
+    Select the best features to use automatically in a classification problem,
+    by using the RandomForestClassifier feature importances.
+
+    Args:
+        labels : ndarray
+            Array with the labels for each data point in the dataset.
+        features : ndarray
+            Array with the features for each data point in the dataset.
+        feature_list : list
+            The list of features that needs to be extracted from the dictionary
+            and returned. The first feature is expected to one with the labels.
+        top_n_features : integer
+            Is the number of features that will be selected from the original
+            dataset, according to their importance.
+
+    Returns:
+        best_features_list : list
+            The list of the best features that will be used for solving the POI
+            classification problem.
+    '''
+    model = RandomForestClassifier(n_estimators=500, n_jobs=8, random_state=42)
+    model.fit(features, labels)
+    importances = model.feature_importances_
+    indices = np.argsort(importances)
+    sorted_features = [feature_list[1:][index] for index in indices]
+    best_features_list = [feature_list[0]]
+    best_features_list.extend(sorted_features[-top_n_features:])
+    print('\nSelected features (with label):\n{}'.format(best_features_list))
+
+    # plotting feature importances
+    print('\nFeature Importances:')
+    plt.figure(figsize=(16, 12))
+    plt.title('Feature Importances')
+    plt.barh(range(len(indices)), importances[indices], color='b')
+    plt.yticks(range(len(indices)), sorted_features)
+    plt.xlabel('Relative Importance')
+    plt.show()
+
+    return best_features_list
+
+
+def remove_enron_outliers(enron_data):
     '''
     Return the labels and features for the Enron dataset, after eliminating the
     outlier data points from the different features.
 
     Args:
-        labels : ndarray
-            Array with the labels for each data point in the enron dataset.
-        features : ndarray
-            Array with the features for each data point in the enron dataset.
+        enron_data : Dictionary
+            Dictionary containing the data stored in the file, in a structured
+            format.
 
     Returns:
-        labels : ndarray
-            Array with the labels for each data point, after having removed
-            all outliers from them.
-        features : ndarray
-            Array with the features for each data point, after having removed
-            all outliers from them.
+        enron_data : Dictionary
+            Dictionary containing the data after removing the outliers.
 
     '''
+    enron_data.pop('TOTAL', 0)
 
-    return labels, features
+    return enron_data
 
 
 def add_enron_features(labels, features):
@@ -714,16 +763,19 @@ def print_overall_results(start_time, results, metrics, best_estimator):
 enron_data = load_data('final_project_dataset.pkl')
 enron_data_frame = get_clean_enron_dataframe(enron_data)
 describe_dataset(enron_data_frame, 'poi')
-# plot_features(enron_df)
+# TODO plot_features(enron_data_frame)
 
-# Task 1: Select what features you'll use.
+# Task 1: Remove outliers
+enron_data = remove_enron_outliers(enron_data)
+
+# Task 2: Select what features you'll use.
 full_enron_feature_list = get_enron_feature_list()
-enron_feature_list = get_best_enron_features(full_enron_feature_list)
-labels, features = get_enron_labels_features(enron_data, enron_feature_list)
-labels, features = remove_enron_outliers(labels, features)
+labels, features = get_labels_features(enron_data, full_enron_feature_list)
+enron_feature_list = get_best_features_names(labels, features,
+                                             full_enron_feature_list, 8)
+labels, features = get_labels_features(enron_data, enron_feature_list)
 labels, features = add_enron_features(labels, features)
 
-# # TODO Task 2: Remove outliers
 # # TODO Task 3: Create new feature(s)
 
 # Task 4: Try a variety of classifiers
