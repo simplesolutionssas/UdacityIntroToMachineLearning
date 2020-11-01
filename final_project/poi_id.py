@@ -376,7 +376,7 @@ def get_labels_features(data_dictionary, feature_list):
     return labels, features
 
 
-def get_best_features_names(labels, features, feature_list, top_n_features):
+def get_best_enron_features(labels, features, feature_list, top_n_features):
     '''
     Select the best features to use automatically in a classification problem,
     by using the RandomForestClassifier feature importances.
@@ -831,7 +831,7 @@ enron_data = remove_enron_outliers(enron_data)
 # Task 2: Select what features you'll use.
 full_enron_feature_list = get_enron_feature_list()
 labels, features = get_labels_features(enron_data, full_enron_feature_list)
-enron_feature_list = get_best_features_names(labels, features,
+enron_feature_list = get_best_enron_features(labels, features,
                                              full_enron_feature_list, 8)
 labels, features = get_labels_features(enron_data, enron_feature_list)
 labels, features = add_enron_features(labels, features)
