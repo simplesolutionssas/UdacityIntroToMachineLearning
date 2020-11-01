@@ -66,13 +66,14 @@ def get_clean_enron_dataframe(enron_data):
     '''
     pd.options.display.float_format = '{:20,.2f}'.format
     enron_data_frame = DataFrame.from_dict(enron_data, orient='index')
+    # Drop unwanted columns.
     enron_data_frame.drop('TOTAL', axis=0, inplace=True)
+    enron_data_frame.drop('email_address', axis=1, inplace=True)
     # All NaN strings are converted to Numpy nan values, which allows the
     # describe function to produce proper numeric values for all statistics.
     enron_data_frame.replace('NaN', np.NaN, regex=True, inplace=True)
     # Convert True to 1 and False to 0.
     enron_data_frame.replace({True: 1, False: 0}, inplace=True)
-    enron_data_frame.drop('email_address', axis=1, inplace=True)
 
     return enron_data_frame
 
