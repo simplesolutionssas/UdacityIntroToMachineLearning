@@ -2,6 +2,7 @@
 
 import sys
 from time import time
+import math
 import pickle
 import pandas as pd
 import seaborn as sns
@@ -205,7 +206,53 @@ def describe_dataset(data_frame, label_column_name):
     print_target_correlation_report(correlations_table, label_column_name)
 
 
-def plot_features(data_frame):
+def draw_features_boxplots(data_frame, label_column_name, plot_columns):
+    '''
+    Generate a box plot for each one of the features in a dataframe, in order
+    to visualize and help detect easily any outliers present on the data.
+
+    Args:
+        data_frame : DataFrame
+            DataFrame containing the data stored in the file, in a structured
+            format.
+        label_column_name : string
+            The name of the column containing the labels for each data point in
+            the DataFrame.
+        plot_columns : integer
+            Number of feature plots to display per row.
+
+    Returns:
+        None
+    '''
+    # Separate labels from features for easier plotting.
+    labels = data_frame[label_column_name]
+    data = data_frame.drop(label_column_name, axis=1)
+    # Get the total columns in data, divide it by plot_columns and round it up
+    # to get the rows we need to accommodate all features in plot_columns.
+    plot_rows = int(math.ceil(float(data.shape[1]) / plot_columns))
+    plot_height = plot_rows * 4
+    _, axes = plt.subplots(plot_rows, plot_columns, figsize=(16, plot_height))
+    figure_count = 0
+    print('\nFeature Boxplots:')
+    for column in data.columns:
+        # Create a dataframe for plotting, with labels and the current column.
+        plot_data = pd.concat([labels, data.loc[:, column]], axis=1)
+        # Transform the dataframe to the required format using melt.
+        plot_data = pd.melt(plot_data, id_vars=label_column_name,
+                            var_name=column, value_name='value')
+        figure_row = figure_count / plot_columns
+        figure_col = figure_count % plot_columns
+        figure_count += 1
+        ax = axes[figure_row, figure_col]
+        sns.boxplot(ax=ax, data=plot_data, hue=label_column_name, x=column,
+                    y='value')
+        ax.set_xlabel('')
+        ax.set_ylabel('')
+
+    plt.show
+
+
+def plot_features(data_frame, label_column_name, plot_columns):
     '''
     Generate a graphic for each one of the features in a dataframe, in order to
     visualize and help detect easily any outliers present on the data.
@@ -214,8 +261,21 @@ def plot_features(data_frame):
         data_frame : DataFrame
             DataFrame containing the data stored in the file, in a structured
             format.
+        label_column_name : string
+            The name of the column containing the labels for each data point in
+            the DataFrame.
+        plot_columns : integer
+            Number of feature plots to display per row.
+
+    Returns:
+        None
     '''
-    sns.pairplot(data_frame, hue='poi')
+    draw_features_boxplots(data_frame, label_column_name, plot_columns)
+    # print('\nFeature plots:')
+    # plt.figure(figsize=(32, 24))
+    # sns.pairplot(features, hue=labels)
+    # plt.title('Correlation Heatmap')
+    # plt.show()
 
 
 def get_enron_feature_list():
@@ -763,7 +823,7 @@ def print_overall_results(start_time, results, metrics, best_estimator):
 enron_data = load_data('final_project_dataset.pkl')
 enron_data_frame = get_clean_enron_dataframe(enron_data)
 describe_dataset(enron_data_frame, 'poi')
-# TODO plot_features(enron_data_frame)
+plot_features(enron_data_frame, 'poi', 3)
 
 # Task 1: Remove outliers
 enron_data = remove_enron_outliers(enron_data)
