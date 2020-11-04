@@ -482,7 +482,22 @@ def remove_enron_outliers(enron_data):
             Dictionary containing the data after removing the outliers.
 
     '''
-    enron_data.pop('TOTAL', 0)
+    negatives_removal_features = ['deferral_payments', 'restricted_stock',
+                                  'total_stock_value']
+    keys = sorted(enron_data.keys())
+    removed_outliers = 0
+    for key in keys:
+        for feature in negatives_removal_features:
+            try:
+                value = enron_data[key][feature]
+                if value < 0:
+                    enron_data[key][feature] = 0
+                    removed_outliers += 1
+            except KeyError:
+                print('Error: key {} not present'.format(feature))
+
+    print('\nOutlier features:\n{}'.format(negatives_removal_features))
+    print('Total outliers removed:\n{}'.format(removed_outliers))
 
     return enron_data
 
