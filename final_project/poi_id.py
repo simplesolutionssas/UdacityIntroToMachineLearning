@@ -194,7 +194,7 @@ def describe_dataset(data_frame, label_column_name):
         None
     '''
     print('\nDataFrame head:')
-    display(data_frame.head(5))
+    display(data_frame)
     print('\nEnron data point count: {}'.format(len(data_frame)))
     print('\nDataFrame info:')
     data_frame.info()
