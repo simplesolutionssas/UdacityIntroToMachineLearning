@@ -38,7 +38,7 @@ def load_data(file_path):
             The absolute file path for the pickle file containing the data.
 
     Returns:
-        dataset : dictionary
+        dataset : Dictionary
             Dictionary containing the data stored in the file, in a structured
             format.
     '''
@@ -374,7 +374,7 @@ def get_labels_features(data_dictionary, feature_list):
     used for determining if the data point should be removed or not.
 
     Args:
-        data_dictionary : dictionary
+        data_dictionary : Dictionary
             Dictionary containing the data stored in the file, in a structured
             format.
         feature_list : list
@@ -534,7 +534,7 @@ def get_pipelines_definitions():
         None
 
     Returns:
-        pipelines : dictionary
+        pipelines : Dictionary
             A dictionary containing all the pipelines that will be used to fit
             the model in order to select the one that produces the best results
             for the given problem.
@@ -786,7 +786,7 @@ def get_best_estimator(features, labels, pipelines, cv_strategy, metrics):
             Array with the features for each data point in the enron dataset.
         labels : ndarray
             Array with the labels for each data point in the enron dataset.
-        pipelines : dictionary
+        pipelines : Dictionary
             Dictionary with specification of the different pipelines we want to
             use to try and solve this particular problem.
         cv_strategy : cross-validation generator
@@ -899,7 +899,7 @@ enron_feature_list = get_best_enron_features(labels, features,
 labels, features = get_labels_features(enron_data, enron_feature_list)
 labels, features = add_enron_features(labels, features)
 
-# # TODO Task 3: Create new feature(s)
+# TODO Task 3: Create new feature(s)
 
 # Task 4: Try a variety of classifiers
 # Please name your classifier clf for easy export below.
