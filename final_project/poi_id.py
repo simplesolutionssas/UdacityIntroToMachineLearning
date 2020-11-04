@@ -250,7 +250,7 @@ def draw_features_boxplots(data_frame, label_column_name, plot_columns):
         ax.set_xlabel('')
         ax.set_ylabel('')
 
-    plt.show
+    plt.show()
 
 
 def draw_features_swarmplots(data_frame, label_column_name, plot_columns):
