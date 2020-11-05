@@ -326,6 +326,41 @@ def plot_features(data_frame, label_column_name, plot_columns):
     # plt.show()
 
 
+def remove_enron_outliers(enron_data):
+    '''
+    Return the labels and features for the Enron dataset, after eliminating the
+    outlier data points from the different features.
+
+    Args:
+        enron_data : Dictionary
+            Dictionary containing the data stored in the file, in a structured
+            format.
+
+    Returns:
+        enron_data : Dictionary
+            Dictionary containing the data after removing the outliers.
+
+    '''
+    negatives_removal_features = ['deferral_payments', 'restricted_stock',
+                                  'total_stock_value']
+    keys = sorted(enron_data.keys())
+    removed_outliers = 0
+    for key in keys:
+        for feature in negatives_removal_features:
+            try:
+                value = enron_data[key][feature]
+                if value < 0:
+                    enron_data[key][feature] = 0
+                    removed_outliers += 1
+            except KeyError:
+                print('Error: key {} not present'.format(feature))
+
+    print('\nOutlier features:\n{}'.format(negatives_removal_features))
+    print('Total outliers removed:\n{}'.format(removed_outliers))
+
+    return enron_data
+
+
 def get_enron_feature_list():
     '''
     Retrieve the feature list to be used for the Enron POI classification
@@ -465,41 +500,6 @@ def get_best_enron_features(labels, features, feature_list, top_n_features):
     plt.show()
 
     return best_features_list
-
-
-def remove_enron_outliers(enron_data):
-    '''
-    Return the labels and features for the Enron dataset, after eliminating the
-    outlier data points from the different features.
-
-    Args:
-        enron_data : Dictionary
-            Dictionary containing the data stored in the file, in a structured
-            format.
-
-    Returns:
-        enron_data : Dictionary
-            Dictionary containing the data after removing the outliers.
-
-    '''
-    negatives_removal_features = ['deferral_payments', 'restricted_stock',
-                                  'total_stock_value']
-    keys = sorted(enron_data.keys())
-    removed_outliers = 0
-    for key in keys:
-        for feature in negatives_removal_features:
-            try:
-                value = enron_data[key][feature]
-                if value < 0:
-                    enron_data[key][feature] = 0
-                    removed_outliers += 1
-            except KeyError:
-                print('Error: key {} not present'.format(feature))
-
-    print('\nOutlier features:\n{}'.format(negatives_removal_features))
-    print('Total outliers removed:\n{}'.format(removed_outliers))
-
-    return enron_data
 
 
 def add_enron_features(labels, features):
