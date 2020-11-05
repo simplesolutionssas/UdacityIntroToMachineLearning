@@ -151,7 +151,7 @@ def print_target_correlation_report(correlations_table, label_column_name):
     display(target_correlations_table)
 
 
-def display_correlation_heatmap(data_frame):
+def draw_correlation_heatmap(data_frame):
     '''
     Generate a table and heatmap to allow visualization of the correlations
     between input features in the dataset.
@@ -201,7 +201,7 @@ def describe_dataset(data_frame, label_column_name):
     print('\nDataFrame description:')
     display(data_frame.describe())
     print_missing_values_table(data_frame)
-    correlations_table = display_correlation_heatmap(data_frame)
+    correlations_table = draw_correlation_heatmap(data_frame)
     print('\nLabel value counts:\n{}'.format(
                                 data_frame[label_column_name].value_counts()))
     print_target_correlation_report(correlations_table, label_column_name)
