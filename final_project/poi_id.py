@@ -1,15 +1,14 @@
 #!/usr/bin/python
 
 import sys
-from time import time
 import math
 import pickle
 import pandas as pd
 import seaborn as sns
 import numpy as np
+from time import time
 from pandas import DataFrame
 from numpy.lib.function_base import average
-from collections import OrderedDict
 from matplotlib import pyplot as plt
 from sklearn.preprocessing import RobustScaler, MinMaxScaler, Normalizer
 from sklearn.decomposition import PCA
@@ -20,11 +19,11 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.cluster import KMeans
 from sklearn.pipeline import Pipeline
-from backports import tempfile
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.metrics import accuracy_score, precision_score, recall_score
 from sklearn.metrics import make_scorer
+from backports import tempfile
 from tester import dump_classifier_and_data
 sys.path.append('../tools/')
 
