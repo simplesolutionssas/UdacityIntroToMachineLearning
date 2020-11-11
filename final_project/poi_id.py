@@ -9,6 +9,7 @@ import numpy as np
 from time import time
 from pandas import DataFrame
 from numpy.lib.function_base import average
+from collections import OrderedDict
 from matplotlib import pyplot as plt
 from functools import partial
 from sklearn.feature_selection import SelectKBest, mutual_info_classif, chi2
