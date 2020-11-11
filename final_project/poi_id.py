@@ -19,8 +19,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.cluster import KMeans
 from sklearn.pipeline import Pipeline
-from sklearn.model_selection import GridSearchCV
-from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.model_selection import GridSearchCV, StratifiedShuffleSplit
 from sklearn.metrics import accuracy_score, precision_score, recall_score
 from sklearn.metrics import make_scorer
 from backports import tempfile
