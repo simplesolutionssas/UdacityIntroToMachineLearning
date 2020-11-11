@@ -10,6 +10,8 @@ from time import time
 from pandas import DataFrame
 from numpy.lib.function_base import average
 from matplotlib import pyplot as plt
+from functools import partial
+from sklearn.feature_selection import SelectKBest, mutual_info_classif, chi2
 from sklearn.preprocessing import RobustScaler, MinMaxScaler, Normalizer
 from sklearn.decomposition import PCA
 from sklearn.naive_bayes import GaussianNB
@@ -416,6 +418,126 @@ def get_labels_features(data_dictionary, feature_list):
     return labels, features
 
 
+# TODO: implement recursive feature elimination (RFE) with random forest
+# TODO: recursive feature elimination with cross validation and random forest
+#       classification
+def get_top_features(feature_importances, feature_list, top_n_features):
+    '''
+    Extract, display and return the best features determined by the classifier
+    object.
+
+    Args:
+        feature_importances : list
+            A list containing the importance of each feature.
+        feature_list : list
+            The list of features that needs to be extracted from the dictionary
+            and returned. The first feature is expected to one with the labels.
+        top_n_features : integer
+            Is the number of features that will be selected from the original
+            dataset, according to their importance.
+
+    Returns:
+        sorted_feature_importances : list
+            A list containing the importance of each feature, organized in
+            descending order.
+        sorted_features : list
+            The full list of features, sorted by importance in descending order
+            (the most important features are placed at the top of the list).
+        best_features : list
+            The list of the top_n_features, sorted by importance in descending
+            order (the most important features are placed at the top of the
+            list).
+    '''
+    indices = np.argsort(feature_importances)
+    # Sort the feature importances to return them without needing the indices.
+    sorted_feature_importances = feature_importances[indices]
+    sorted_features = [feature_list[1:][index] for index in indices]
+    best_features = [feature_list[0]]
+    best_features.extend(sorted_features[-top_n_features:])
+
+    return sorted_feature_importances, sorted_features, best_features
+
+
+def plot_feature_importances(feature_importances, sorted_features):
+    '''
+    Plot the features importances for a list of features (sorted by their
+    importance).
+
+    Args:
+        feature_importances : list
+            A list containing the importance of each feature.
+        sorted_features : list
+            The full list of features, sorted by importance in descending order
+            (the most important features are placed at the top of the list).
+
+    Returns:
+        None
+    '''
+    print('\nFeature Importances:')
+    plt.figure(figsize=(16, 12))
+    y_values = range(len(sorted_features))
+    plt.barh(y_values, feature_importances, color='b')
+    plt.yticks(y_values, sorted_features)
+    plt.xlabel('Relative Importance')
+    plt.show()
+
+
+def average_feature_importances(models, labels, features, feature_list,
+                                top_n_features):
+    '''
+    Calculate the total sum of feature importances obtained by evaluating the
+    different models passed as arguments. A side effect is the plotting and
+    printing of the best features selected by each one of these models.
+
+    Args:
+        modeles : dictionary
+            Dictionary containing the model names (as keys) and model objects
+            (as values) that will be used to select the top_n_features
+        labels : ndarray
+            Array with the labels for each data point in the dataset.
+        features : ndarray
+            Array with the features for each data point in the dataset.
+        feature_list : list
+            The list of features that needs to be extracted from the dictionary
+            and returned. The first feature is expected to one with the labels.
+        top_n_features : integer
+            Is the number of features that will be selected from the original
+            dataset, according to their importance.
+
+    Returns:
+        average_feature_importances : list
+            A list with the sum of feature importances obtained by all the
+            models evaluated.
+    '''
+    feature_importance_sum = [0.0] * (len(feature_list) - 1)
+    for model_name, model in models.items():
+        if model_name == 'SelectKBest (chi2)':
+            # Chi2 doesn't accept negative values, so min-max scaling is
+            # required to transform the dataset appropriately.
+            model.fit(MinMaxScaler().fit_transform(features), labels)
+            feature_importances = model.scores_
+        elif model_name == 'RandomForestClassifier':
+            model.fit(features, labels)
+            feature_importances = model.feature_importances_
+        else:
+            model.fit(features, labels)
+            feature_importances = model.scores_
+
+        # Since feature importances don't add to 1 for all models, we use
+        # normalization to represent correctly each model in the end result.
+        normalized_importances = feature_importances / sum(feature_importances)
+        feature_importance_sum += normalized_importances
+        sorted_feature_importances, sorted_features, best_features = \
+            get_top_features(feature_importances, feature_list, top_n_features)
+        print('\nFeatures selected by {}:\n{}'.format(model_name,
+                                                      best_features))
+        plot_feature_importances(sorted_feature_importances, sorted_features)
+
+    average_feature_importances = feature_importance_sum / len(models)
+
+    return average_feature_importances
+
+
 def get_best_enron_features(labels, features, feature_list, top_n_features):
     '''
     Select the best features to use automatically in a classification problem,
@@ -434,29 +556,32 @@ def get_best_enron_features(labels, features, feature_list, top_n_features):
             dataset, according to their importance.
 
     Returns:
-        best_features_list : list
+        best_features : list
             The list of the best features that will be used for solving the POI
             classification problem.
     '''
-    model = RandomForestClassifier(n_estimators=500, n_jobs=8, random_state=42)
-    model.fit(features, labels)
-    importances = model.feature_importances_
-    indices = np.argsort(importances)
-    sorted_features = [feature_list[1:][index] for index in indices]
-    best_features_list = [feature_list[0]]
-    best_features_list.extend(sorted_features[-top_n_features:])
-    print('\nSelected features (with label):\n{}'.format(best_features_list))
+    models = {
+        'RandomForestClassifier':
+            RandomForestClassifier(n_estimators=500, n_jobs=8,
+                                   random_state=42),
+        'SelectKBest (mutual_info_classif)':
+            # We use 'partial' to create a custom scoring function, based on
+            # the standard scoring function mutual_info_classif, but using
+            # random_state, which otherwise we couldn't use with SelectKBest.
+            SelectKBest(partial(mutual_info_classif, random_state=42),
+                        top_n_features),
+        'SelectKBest (chi2)':
+            SelectKBest(chi2, top_n_features)
+    }
+    feature_importances = average_feature_importances(models, labels, features,
+                                                      feature_list,
+                                                      top_n_features)
+    sorted_feature_importances, sorted_features, best_features = \
+        get_top_features(feature_importances, feature_list, top_n_features)
+    print('\nBest overall features selected:\n{}'.format(best_features))
+    plot_feature_importances(sorted_feature_importances, sorted_features)
 
-    # plotting feature importances
-    print('\nFeature Importances:')
-    plt.figure(figsize=(16, 12))
-    plt.title('Feature Importances')
-    plt.barh(range(len(indices)), importances[indices], color='b')
-    plt.yticks(range(len(indices)), sorted_features)
-    plt.xlabel('Relative Importance')
-    plt.show()
-
-    return best_features_list
+    return best_features
 
 
 def add_enron_features(labels, features):
