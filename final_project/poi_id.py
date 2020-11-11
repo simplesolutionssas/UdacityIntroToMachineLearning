@@ -208,8 +208,7 @@ def describe_dataset(data_frame, label_column_name):
     print_target_correlation_report(correlations_table, label_column_name)
 
 
-def draw_plot(data_frame, plot_function, label_column_name,
-                        plot_columns):
+def draw_plot(data_frame, plot_function, label_column_name, plot_columns):
     '''
     Generate a swarm plot for each one of the features in a dataframe, in order
     to visualize and help detect easily any outliers present on the data.
@@ -491,7 +490,7 @@ def average_feature_importances(models, labels, features, feature_list,
     printing of the best features selected by each one of these models.
 
     Args:
-        modeles : dictionary
+        models : dictionary
             Dictionary containing the model names (as keys) and model objects
             (as values) that will be used to select the top_n_features
         labels : ndarray
