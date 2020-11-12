@@ -12,6 +12,7 @@ from numpy.lib.function_base import average
 from collections import OrderedDict
 from matplotlib import pyplot as plt
 from functools import partial
+from sklearn.ensemble.forest import ExtraTreesClassifier
 from sklearn.feature_selection import SelectKBest, mutual_info_classif, chi2
 from sklearn.preprocessing import RobustScaler, MinMaxScaler, Normalizer
 from sklearn.decomposition import PCA
@@ -516,12 +517,12 @@ def average_feature_importances(models, labels, features, feature_list,
             # required to transform the dataset appropriately.
             model.fit(MinMaxScaler().fit_transform(features), labels)
             feature_importances = model.scores_
-        elif model_name == 'RandomForestClassifier':
-            model.fit(features, labels)
-            feature_importances = model.feature_importances_
-        else:
+        elif model_name == 'SelectKBest (mutual_info_classif)':
             model.fit(features, labels)
             feature_importances = model.scores_
+        else:
+            model.fit(features, labels)
+            feature_importances = model.feature_importances_
 
         # Since feature importances don't add to 1 for all models, we use
         # normalization to represent correctly each model in the end result.
@@ -564,6 +565,9 @@ def get_best_enron_features(labels, features, feature_list, top_n_features):
         'RandomForestClassifier':
             RandomForestClassifier(n_estimators=500, n_jobs=8,
                                    random_state=42),
+        'ExtraTreeClassifier':
+            ExtraTreesClassifier(n_estimators=500, n_jobs=8,
+                                 random_state=42),
         'SelectKBest (mutual_info_classif)':
             # We use 'partial' to create a custom scoring function, based on
             # the standard scoring function mutual_info_classif, but using
