@@ -935,8 +935,7 @@ def custom_score(labels, predictions):
     accuracy = accuracy_score(labels, predictions)
     precision = precision_score(labels, predictions)
     recall = recall_score(labels, predictions)
-    # accuracy is included twice in the average, to give increase its weight.
-    total_score = average([accuracy, accuracy, precision, recall])
+    total_score = average([accuracy, precision, recall])
 
     return total_score
 
