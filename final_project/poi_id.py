@@ -660,7 +660,8 @@ def get_pipelines_definitions():
                     # With values over 6 (8, 16, None) the search won't finish.
                     'reduce_dim': [PCA(2), PCA(4)],
                     'classify__kernel': ['poly'],
-                    'classify__gamma': ['auto', 'scale'],
+                    # With a value of 'scale' the search won't finish.
+                    'classify__gamma': ['auto'],
                     'classify__C': [10, 100, 1000],
                     # With a value of 2 or 3 the search won't finish.
                     'classify__degree': [4, 5]
