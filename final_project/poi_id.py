@@ -419,9 +419,6 @@ def get_labels_features(data_dictionary, feature_list):
     return labels, features
 
 
-# TODO: implement recursive feature elimination (RFE) with random forest
-# TODO: recursive feature elimination with cross validation and random forest
-#       classification
 def get_top_features(feature_importances, feature_list, top_n_features):
     '''
     Extract, display and return the best features determined by the classifier
@@ -978,6 +975,10 @@ plot_features(enron_data_frame, 'poi', 3)
 enron_data = remove_enron_outliers(enron_data)
 
 # Task 2: Select what features you'll use.
+# TODO: Recursive feature elimination with and without cross validation (RFECV
+#       and RFE) were explored, but got stuck during the selection process, so
+#       I didn't try any further. But these methods are worth revisiting in
+#       future projects.
 full_enron_feature_list = get_enron_feature_list()
 labels, features = get_labels_features(enron_data, full_enron_feature_list)
 enron_feature_list = get_best_enron_features(labels, features,
