@@ -12,7 +12,7 @@ from numpy.lib.function_base import average
 from collections import OrderedDict
 from matplotlib import pyplot as plt
 from functools import partial
-from sklearn.ensemble.forest import ExtraTreesClassifier
+from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.feature_selection import SelectKBest, mutual_info_classif, chi2
 from sklearn.preprocessing import RobustScaler, MinMaxScaler, Normalizer
 from sklearn.decomposition import PCA
@@ -26,8 +26,9 @@ from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV, StratifiedShuffleSplit
 from sklearn.metrics import accuracy_score, precision_score, recall_score
 from sklearn.metrics import make_scorer
-from backports import tempfile
+from IPython.display import display
 from tester import dump_classifier_and_data
+import tempfile
 sys.path.append('../tools/')
 
 
@@ -45,9 +46,8 @@ def load_data(file_path):
             format.
     '''
     # Load the dictionary containing the dataset
-    file = open(file_path, 'r')
-    dataset = pickle.load(file)
-    file.close()
+    with open(file_path, 'rb') as file:
+        dataset = pickle.load(file)
 
     return dataset
 
@@ -245,8 +245,8 @@ def draw_plot(data_frame, plot_function, label_column_name, plot_columns):
         # Transform the dataframe to the required format using melt.
         plot_data = pd.melt(plot_data, id_vars=label_column_name,
                             var_name=column, value_name='value')
-        figure_row = figure_count / plot_columns
-        figure_col = figure_count % plot_columns
+        figure_row = int(figure_count / plot_columns)
+        figure_col = int(figure_count % plot_columns)
         figure_count += 1
         ax = axes[figure_row, figure_col]
         plot_function(ax=ax, data=plot_data, hue=label_column_name, x=column,
@@ -308,7 +308,7 @@ def remove_enron_outliers(enron_data):
     for key in keys:
         for feature in negatives_removal_features:
             try:
-                value = enron_data[key][feature]
+                value = float(enron_data[key][feature])
                 if value < 0:
                     enron_data[key][feature] = 0
                     removed_outliers += 1
@@ -898,8 +898,8 @@ def get_best_estimator(features, labels, pipelines, cv_strategy, metrics):
         print('\nAnalyzing {}...'.format(estimator))
         clf = GridSearchCV(pipeline, param_grid=pipeline_definition,
                            cv=cv_strategy, scoring=metrics,
-                           refit=metric_names[0], iid=False,
-                           n_jobs=8, verbose=True, error_score='raise',
+                           refit=metric_names[0], n_jobs=8,
+                           verbose=True, error_score='raise',
                            return_train_score=True)
         clf.fit(features, labels)
         results = clf.cv_results_
