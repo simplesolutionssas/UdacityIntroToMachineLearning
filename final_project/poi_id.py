@@ -514,9 +514,6 @@ def average_feature_importances(models, labels, features, feature_list,
             # required to transform the dataset appropriately.
             model.fit(MinMaxScaler().fit_transform(features), labels)
             feature_importances = model.scores_
-        elif model_name == 'SelectKBest (mutual_info_classif)':
-            model.fit(features, labels)
-            feature_importances = model.scores_
         else:
             model.fit(features, labels)
             feature_importances = model.feature_importances_
