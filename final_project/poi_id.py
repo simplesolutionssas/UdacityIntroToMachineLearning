@@ -565,12 +565,6 @@ def get_best_enron_features(labels, features, feature_list, top_n_features):
         'ExtraTreeClassifier':
             ExtraTreesClassifier(n_estimators=500, n_jobs=8,
                                  random_state=42),
-        'SelectKBest (mutual_info_classif)':
-            # We use 'partial' to create a custom scoring function, based on
-            # the standard scoring function mutual_info_classif, but using
-            # random_state, which otherwise we couldn't use with SelectKBest.
-            SelectKBest(partial(mutual_info_classif, random_state=42),
-                        top_n_features),
         'SelectKBest (chi2)':
             SelectKBest(chi2, top_n_features)
     }
